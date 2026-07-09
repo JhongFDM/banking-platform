@@ -3,6 +3,12 @@ import { Home } from './Components/home/home';
 
 export const routes: Routes = [
     {path: '', redirectTo: 'home', pathMatch: 'full'},
+    {
+        path: 'login', loadComponent: () => import('./Components/login/login').then(m => m.Login)
+    },
+    {
+        path: 'register', loadComponent: () => import('./Components/register/register').then(m => m.Register)
+    },
     {path: 'home', 
         component: Home, 
         children: [

@@ -1,0 +1,29 @@
+<app-header></app-header>
+
+<body>
+
+    <div class="register-card">
+        <h1> Register</h1>
+
+        <p class="step-label">
+            1. Account Type
+        </p>
+
+        <label class="field-label" for="account-type"> Account Type </label>
+
+        <select id="account-type" class="select-input">
+            <option value="personal">Personal</option>
+            <option value="business">Business</option>
+        </select>
+
+        <br>
+
+
+        <div class="button-row">
+            <button class="btn-primary">Continue</button>
+            <button class="btn-secondary" routerLink="/login" routerLinkActive="active">Back to Login</button>
+        </div>
+
+    </div>
+
+</body>

@@ -1,0 +1,50 @@
+<app-header>  </app-header>
+<body>
+
+  <br>
+  <br>
+  
+  @if (loginPage === true) {
+  <div class="login-card">
+
+      <h1 >Login</h1>
+      <p class="description">
+        Authenticate with the merged backend and store the access token for protected requests.
+      </p>
+
+      @if (emailEntered === false) {
+      <p class="" role="alert">Enter a valid email address.</p>
+      }
+
+      @if (passwordEntered === false) {
+      <p class="" role="alert">Password is required.</p>
+      }
+
+      <form class="form-group">
+        <label for="email" class="field-label">Email</label>
+        <input type="email" class="text-input" id="email"
+            [(ngModel)]="loginData.email" name="email" #emailRef="ngModel" required />
+
+        <br>
+
+        <label for="password" class="field-label">Password</label>
+        <input type="password" class="text-input" id="password"
+            [(ngModel)]="loginData.password" name="password" #passwordRef="ngModel" required />
+
+        <div class="button-row">
+          <button type="submit" class="btn-primary" id="btn-login" (click)="login()">
+            Sign In
+          </button>
+          <button type="register" class="btn-secondary" routerLink="/register" routerLinkActive="active">
+            Register
+          </button>
+          <button type="password-reset" class="btn-secondary">
+            Password Reset
+          </button>
+        </div>
+      </form>
+  </div>
+  } @else {
+
+  }
+</body>
