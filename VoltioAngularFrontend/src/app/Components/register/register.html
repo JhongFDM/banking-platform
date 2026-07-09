@@ -2,17 +2,21 @@
 
 <body>
 
+    <br>
+
     <div class="register-card">
         <h1> Register</h1>
 
+        @if(!registerAccount)
+        {
         <p class="step-label">
             1. Account Type
         </p>
 
         <label class="field-label" for="account-type"> Account Type </label>
 
-        <select id="account-type" class="select-input">
-            <option value="personal">Personal</option>
+        <select id="account-type" class="select-input" [(ngModel)]="selectedAccountType">
+            <option value="personal" selected>Personal</option>
             <option value="business">Business</option>
         </select>
 
@@ -20,9 +24,68 @@
 
 
         <div class="button-row">
-            <button class="btn-primary">Continue</button>
+            <button class="btn-primary" (click)="continue()">Continue</button>
             <button class="btn-secondary" routerLink="/login" routerLinkActive="active">Back to Login</button>
         </div>
+        } @else {
+        <p class="step-label">
+            2. Details
+        </p>
+
+        <form class="form-group">
+            <label for="email" class="field-label">Email</label>
+            <input type="email" class="text-input" id="email" [(ngModel)]="registerData.email" name="email"
+                #emailRef="ngModel" required />
+
+            <br>
+
+            <label for="password" class="field-label">Password</label>
+            <input type="password" class="text-input" id="password" [(ngModel)]="registerData.password" name="password"
+                #passwordRef="ngModel" required />
+
+            <p class="description"> Minimum 8 characters with uppercase, digit, and special character.</p>
+
+            <label for="full-name" class="field-label">Fulll Name</label>
+            <input type="full-name" class="text-input" id="full-name" [(ngModel)]="registerData.fullName"
+                name="full-name" #emailRef="ngModel" required />
+
+            <br>
+
+            <label for="address" class="field-label">Address</label>
+            <input type="address" class="text-input" id="address" [(ngModel)]="registerData.address" name="address"
+                #passwordRef="ngModel" required />
+
+            @if(selectedAccountType == 'personal'){
+            <label for="date-of-birth" class="field-label">Date of Birth</label>
+            <input type="date-of-birth" class="text-input" id="address" [(ngModel)]="registerData.dateOfBirth"
+                name="date-of-birth" #passwordRef="ngModel" required />
+
+            <p class="description"> Required for TFSA accounts. Defaults to 1998-10-26 if left blank.</p>
+
+            } @else if(selectedAccountType == 'business'){
+            <label for="government-business-number" class="field-label">Government Business Number</label>
+            <input type="government-business-number" class="text-input" id="address" [(ngModel)]="registerData.governmentBusinessNumber"
+                name="government-business-number" #passwordRef="ngModel" required />
+
+            <p class="description"> 9-digit number required for business accounts. </p>
+            }
+
+
+            <div class="button-row">
+                <button type="register" class="btn-secondary" (click)="back()">
+                    Back
+                </button>
+                <button type="submit" class="btn-primary" id="btn-login" (click)="register()">
+                    Create Account
+                </button>
+
+            </div>
+
+
+
+        </form>
+        }
+
 
     </div>
 

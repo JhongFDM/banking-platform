@@ -17,8 +17,6 @@ export class Login {
   }
   emailEntered : boolean = true;
   passwordEntered : boolean = true;
-  loginPage : boolean = true;
-  accountType: boolean = false;
 
   login() {
     console.log('Login data:', this.loginData);

@@ -1,10 +1,6 @@
 <app-header>  </app-header>
 <body>
-
-  <br>
-  <br>
   
-  @if (loginPage === true) {
   <div class="login-card">
 
       <h1 >Login</h1>
@@ -13,11 +9,11 @@
       </p>
 
       @if (emailEntered === false) {
-      <p class="" role="alert">Enter a valid email address.</p>
+      <p class="alert-error" role="alert">Enter a valid email address.</p>
       }
 
       @if (passwordEntered === false) {
-      <p class="" role="alert">Password is required.</p>
+      <p class="alert-error" role="alert">Password is required.</p>
       }
 
       <form class="form-group">
@@ -44,7 +40,4 @@
         </div>
       </form>
   </div>
-  } @else {
-
-  }
 </body>
