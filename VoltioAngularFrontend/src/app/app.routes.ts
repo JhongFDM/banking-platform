@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { Home } from './Components/home/home';
+import { Home } from './pages/home/home';
 
 export const routes: Routes = [
     {path: '', redirectTo: 'home', pathMatch: 'full'},
@@ -7,25 +7,25 @@ export const routes: Routes = [
         component: Home, 
         children: [
             {path: '', redirectTo: 'dashboard', pathMatch: 'full'},
-            {path: 'dashboard', loadComponent: () => import('./Components/dashboard/dashboard').then(m => m.Dashboard)
+            {path: 'dashboard', loadComponent: () => import('./pages/dashboard/dashboard').then(m => m.Dashboard)
             },
             {
-                path:'my-accounts', loadComponent: () => import('./Components/my-accounts/my-accounts').then(m => m.MyAccounts)
+                path:'my-accounts', loadComponent: () => import('./pages/my-accounts/my-accounts').then(m => m.MyAccounts)
             },
             {
-                path:'transfer-funds', loadComponent: () => import('./Components/transfer-funds/transfer-funds').then(m => m.TransferFunds)
+                path:'transfer-funds', loadComponent: () => import('./pages/transfer-funds/transfer-funds').then(m => m.TransferFunds)
             },
             {
-                path:'transactions', loadComponent: () => import('./Components/transactions/transactions').then(m => m.Transactions)
+                path:'transactions', loadComponent: () => import('./pages/transactions/transactions').then(m => m.Transactions)
             },
             {
-                path: 'monthly-statements', loadComponent: () => import('./Components/monthly-statements/monthly-statements').then(m => m.MonthlyStatements)
+                path: 'monthly-statements', loadComponent: () => import('./pages/monthly-statements/monthly-statements').then(m => m.MonthlyStatements)
             },
             {
-                path: 'spending-insights', loadComponent: () => import('./Components/spending-insights/spending-insights').then(m => m.SpendingInsights)
+                path: 'spending-insights', loadComponent: () => import('./pages/spending-insights/spending-insights').then(m => m.SpendingInsights)
             },
             {
-                path: 'standing-orders', loadComponent: () => import('./Components/standing-orders/standing-orders').then(m => m.StandingOrders)
+                path: 'standing-orders', loadComponent: () => import('./pages/standing-orders/standing-orders').then(m => m.StandingOrders)
             }
         ]
     },

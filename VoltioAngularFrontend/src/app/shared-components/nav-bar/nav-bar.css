@@ -5,6 +5,9 @@
   height: 56px;
   align-items: center;
   background-color: rgba(0, 0, 0, 0.2);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
 .nav-btn {
@@ -44,9 +47,6 @@
 @media (max-width: 768px) {
   .nav-bar {
     gap: 24px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
   }
 
   .nav-bar::-webkit-scrollbar {
