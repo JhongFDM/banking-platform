@@ -1,0 +1,14 @@
+.badge{
+    position: relative;
+    width: fit-content;
+}
+
+.badge-text{
+    text-align: center;
+}
+
+.badge-text p {
+    padding: 3px 8px;
+    background-color: var(--brand-accent);
+    border-radius: 10px;
+}

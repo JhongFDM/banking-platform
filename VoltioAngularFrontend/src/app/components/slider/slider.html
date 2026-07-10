@@ -1,0 +1,21 @@
+<div class="slider">
+    @for(offer of offers; track offer; let i = $index){
+        @if(currentIndex() === i){
+            <div class="slide">
+                <div class="slide-bg">
+                    <img class="slide-bg-image" [src]="offer.image" [animate.enter]="'slide-in'" [animate.leave]="'slide-out'"  alt="image">
+                </div>
+                <div class="slide-pane">
+                    <div class="slide-pane-content">
+                        <h2 class="title">Welcome User Name!</h2>
+                        <br>
+                        <app-badge [badgeText]="offer.badge"></app-badge>
+                        <h3>{{offer.title}}</h3>
+                        <p>{{offer.description}}</p>
+                    </div>
+                </div>
+            </div>
+        
+        }
+    }
+</div>
