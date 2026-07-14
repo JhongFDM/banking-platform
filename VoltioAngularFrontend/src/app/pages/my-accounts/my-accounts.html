@@ -1,1 +1,166 @@
-<p>my-accounts works!</p>
+<div class="banner-stack">
+  @if (actionMessage()) { 
+    <div class="banner success">{{ actionMessage() }}</div> 
+  }
+  @if (goalActionMessage()) { 
+    <div class="banner success">{{ goalActionMessage() }}</div> 
+  }
+  @if (error() && !isCreateModalOpen) { 
+    <div class="banner error">{{ error()?.message }}</div> 
+  }
+  @if (isLoadingAccounts()) { 
+    <div class="banner success">Loading accounts...</div> 
+  }
+</div>
+
+<div class="stack">
+  <section class="panel stack">
+    <div class="page-header-row">
+      <div>
+        <h2>
+          {{ isAdmin && customer()?.name ? customer().name + "'s Accounts" : 'My Accounts' }}
+        </h2>
+        <p class="muted text-top-muted">
+          {{ isAdmin && customer()?.name ? 'View and manage ' + customer().name + "'s accounts." : 'View and manage your accounts.' }}
+        </p>
+      </div>
+      <button type="button" class="btn-primary" (click)="openCreateModal()">Create Account</button>
+    </div>
+
+    @if (isAdmin) {
+      <div class="field">
+        <label for="accounts-customer-switcher">Admin Customer Switcher (Mock)</label>
+        <select id="accounts-customer-switcher" (change)="handleCustomerSwitch($event)">
+          @for (customerOption of customerList(); track customerOption.customerId) {
+            <option [value]="customerOption.customerId" [selected]="customerOption.customerId === customer().customerId">
+              {{ customerOption.customerId }} - {{ customerOption.name }}
+            </option>
+          }
+        </select>
+      </div>
+    }
+
+    <section class="accounts-table-shell">
+      @if (accounts().length > 0) {
+        <div class="account-card-list">
+          @for (account of accounts(); track account.accountId) {
+            <a class="account-card" [routerLink]="['/accounts', account.accountId]">
+              <div class="account-card-header">
+                <span class="account-card-type">
+                    {{ account.accountType }}
+                    @if (account.accountType === 'TFSA') { <span class="badge">Tax-Free</span> }
+                    @if (account.status === 'FROZEN') { <span class="badge badge-warning">Frozen</span> }
+                </span>
+                <span class="account-card-id">{{ account.accountId }}</span>
+              </div>
+              <span class="account-card-balance">${{ account.balance }}</span>
+              @if (account.accountType === 'TFSA' && tfsaRate !== null) {
+                <span class="field-hint">{{ tfsaRate }}% APY</span>
+              }
+            </a>
+          }
+          
+          <div class="account-card account-card-total">
+            <div class="account-card-header">
+              <span class="account-card-type">Total Account Balance</span>
+            </div>
+            <span class="account-card-balance">${{ totalBalance().toFixed(2) }}</span>
+          </div>
+        </div>
+      } @else {
+        <div class="panel empty-state">
+          <h3>No active accounts found</h3>
+        </div>
+      }
+    </section>
+  </section>
+
+  @if (!isAdmin) {
+    <section class="panel stack">
+      <div class="page-header-row">
+        <div>
+          <h2>Savings Goals</h2>
+          <p class="muted text-top-muted">Track your savings progress for each account.</p>
+        </div>
+      </div>
+      
+      <div class="goal-list">
+        @for (account of accounts(); track account.accountId) {
+          <div class="goal-list-item">
+            @if (goalsByAccountId()[account.accountId]; as goal) {
+              <div class="goal-card">
+                <div class="goal-card-details">
+                  <h4>{{ goal.name }}</h4>
+                  <p class="muted">Target: ${{ goal.target }} | Current: ${{ goal.current }}</p>
+                  <div class="progress-bar-container">
+                    <div class="progress-bar-fill" [style.width.%]="(goal.current / goal.target) * 100"></div>
+                  </div>
+                </div>
+                <button type="button" class="btn-danger-link" (click)="handleDeleteGoal(goal)">Delete Goal</button>
+              </div>
+            } @else {
+              <div class="goal-empty-card">
+                <div class="goal-empty-info">
+                  <span class="goal-empty-account">
+                    {{ account.accountType }} ···· {{ account.accountNumber?.slice(-4) }}
+                  </span>
+                  <span class="goal-empty-label">No savings goal set yet</span>
+                </div>
+                <button type="button" class="secondary" (click)="goalCreationAccountId = account.accountId; isGoalCreationOpen = true;">
+                  + Add a goal
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (isCreateModalOpen) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <div class="modal-panel stack" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="section-header">
+          <h3>Create Mock Account</h3>
+          <button type="button" class="secondary" (click)="closeCreateModal()">Close</button>
+        </div>
+        
+        <form class="stack" (submit)="handleCreateAccount($event)">
+          @if (error()) { <div class="banner error">{{ error()?.message }}</div> }
+          @if (isKycBlocked) { <div class="banner error">Identity verification required for this account type.</div> }
+          @if (isTooYoung) { <div class="banner error">TFSA requires a minimum age of 18.</div> }
+          
+          <div class="field">
+            <label for="accountType">Account Type</label>
+            <select id="accountType" [(ngModel)]="formState.accountType" name="accountType">
+              <option value="CHECKING">CHECKING</option>
+              <option value="SAVINGS">SAVINGS</option>
+              <option value="TFSA">TFSA</option>
+              <option value="RRSP">RRSP</option>
+            </select>
+            @if (isTfsa && tfsaRate !== null) { <p class="field-hint">Current TFSA rate: {{ tfsaRate }}% APY</p> }
+            @if (formState.accountType === 'RRSP' && rrspRate !== null) { <p class="field-hint">Current RRSP rate: {{ rrspRate }}% APY</p> }
+          </div>
+
+          @if (showBalance()) {
+            <div class="field">
+              <label for="balance">{{ isTfsa ? 'Initial Contribution' : 'Opening Balance' }}</label>
+              <input id="balance" [(ngModel)]="formState.balance" name="balance" type="number" />
+            </div>
+          }
+
+          @if (showInterestRate()) {
+            <div class="field">
+              <label for="interestRate">Interest Rate</label>
+              <input id="interestRate" [(ngModel)]="formState.interestRate" name="interestRate" type="number" step="0.01" />
+            </div>
+          }
+
+          <div class="actions centered-actions">
+            <button type="submit" class="btn-primary" [disabled]="isTooYoung || isKycBlocked">Create Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>
