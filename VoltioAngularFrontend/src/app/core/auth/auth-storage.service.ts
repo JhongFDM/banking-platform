@@ -65,14 +65,30 @@ export class AuthStorageService {
    *
    * This would typically be called after a successful login.
    */
-  write(authState: AuthState): void {
+write(authState: Partial<AuthState>): void {
 
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify(authState)
-    );
+  const normalizedState: AuthState = {
 
-  }
+    accessToken:
+      authState.accessToken ?? null,
+
+    expiresAt:
+      authState.expiresAt ?? null,
+
+    refreshToken:
+      authState.refreshToken ?? null,
+
+    customerId:
+      authState.customerId ?? null
+
+  };
+
+  localStorage.setItem(
+    AUTH_STORAGE_KEY,
+    JSON.stringify(normalizedState)
+  );
+
+}
 
   /**
    * Removes the stored authentication information.

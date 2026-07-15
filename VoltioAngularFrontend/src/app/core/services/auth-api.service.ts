@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError, throwError } from 'rxjs';
+
+import { mapApiError } from '../errors/api-error.mapper';
 
 import { environment } from '../../../environments/environment';
 
@@ -52,8 +55,8 @@ export class AuthApiService {
    *    baseURL: mergedBackendBaseUrl
    * })
    */
-  private readonly apiUrl =
-    environment.apiUrl;
+  private readonly backendBaseUrl =
+    environment.backendBaseUrl;
 
 
 
@@ -70,20 +73,27 @@ export class AuthApiService {
    *
    * registerUser(payload)
    */
-  register(
+    register(
     payload: unknown
-  ): Observable<AuthResponse> {
-
+    ): Observable<AuthResponse> {
 
     return this.http.post<AuthResponse>(
 
-      `${this.apiUrl}/api/auth/register`,
+    `${this.backendBaseUrl}/api/auth/register`,
 
-      payload
+    payload
 
-    );
+    ).pipe(
 
-  }
+    catchError(error => {
+
+      return throwError(() => mapApiError(error));
+
+    })
+
+  );
+
+}
 
 
 
@@ -94,20 +104,27 @@ export class AuthApiService {
    *
    * loginUser(payload)
    */
-  login(
-    payload: LoginRequest
-  ): Observable<AuthResponse> {
+login(
+  payload: LoginRequest
+): Observable<AuthResponse> {
 
+  return this.http.post<AuthResponse>(
 
-    return this.http.post<AuthResponse>(
+    `${this.backendBaseUrl}/api/auth/login`,
 
-      `${this.apiUrl}/api/auth/login`,
+    payload
 
-      payload
+  ).pipe(
 
-    );
+    catchError(error => {
 
-  }
+      return throwError(() => mapApiError(error));
+
+    })
+
+  );
+
+}
 
 
 }
