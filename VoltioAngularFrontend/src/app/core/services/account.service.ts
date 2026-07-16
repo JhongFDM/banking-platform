@@ -3,6 +3,11 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { TransferRequest, TransferResponse, AccountResponse, CreateAccountRequest, UpdateAccountRequest} from '../models/account.model'
+import { MonetaryRequest, MonetaryOperationResponse } from '../models/monetary.model'
+import { MessageResponse } from '../models/common.model'
+import { FreezeAccountRequest, UnfreezeAccountRequest, AccountControlActionResponse, AccountControlHistoryResponse} from '../models/account-control.model';
+
 
 /**
  * Angular service responsible for communicating
@@ -47,9 +52,9 @@ export class AccountService {
    *
    * accountApiClient.get(...)
    */
-  getAccount(accountId: string): Observable<any> {
+  getAccount(accountId: number): Observable<AccountResponse> {
 
-    return this.http.get(
+    return this.http.get<AccountResponse>(
 
       `${this.backendBaseUrl}/accounts/${accountId}`
 
@@ -66,11 +71,9 @@ export class AccountService {
    * The React code handled several
    * possible response formats.
    */
-  listCustomerAccounts(
-    customerId: string
-  ): Observable<any> {
+  listCustomerAccounts(customerId: number): Observable<AccountResponse[]> {
 
-    return this.http.get(
+    return this.http.get<AccountResponse[]>(
 
       `${this.backendBaseUrl}/customers/${customerId}/accounts`
 
@@ -86,76 +89,15 @@ export class AccountService {
    * The request body depends on
    * the account type.
    */
-  createAccount(payload: any): Observable<any> {
+  createAccount(customerId: number, payload: CreateAccountRequest): Observable<AccountResponse> {
 
-    /*
-     * Build the request body expected
-     * by the backend.
-     */
-    const body: any = {
+    return this.http.post<AccountResponse>(
 
-      accountType: payload.accountType,
+      `${this.backendBaseUrl}/customers/${customerId}/accounts`,
 
-      balance: Number(payload.balance)
-
-    };
-
-
-    /*
-     * RRSP accounts always begin
-     * with zero balance.
-     */
-    if (payload.accountType === 'RRSP') {
-
-      body.balance = 0;
-
-      body.interestRate = 0.5;
-
-    }
-
-    /*
-     * Savings and TFSA accounts
-     * require an interest rate.
-     */
-    else if (
-
-      payload.accountType === 'SAVINGS' ||
-
-      payload.accountType === 'TFSA'
-
-    ) {
-
-      body.interestRate =
-        Number(payload.interestRate);
-
-    }
-
-    /*
-     * TFSA accounts additionally
-     * require date of birth.
-     */
-    if (
-
-      payload.accountType === 'TFSA' &&
-
-      payload.dateOfBirth
-
-    ) {
-
-      body.dateOfBirth =
-        payload.dateOfBirth;
-
-    }
-
-
-    return this.http.post(
-
-      `${this.backendBaseUrl}/customers/${payload.customerId}/accounts`,
-
-      body
+      payload
 
     );
-
   }
 
   /**
@@ -163,41 +105,26 @@ export class AccountService {
    *
    * Updates editable account fields.
    */
-  updateAccount(payload: any): Observable<any> {
+  updateAccount(accountId: number, payload: UpdateAccountRequest): Observable<AccountResponse> {
 
-    const body: any = {};
+  return this.http.put<AccountResponse>(
 
-    /*
-     * Only send the interest rate
-     * if the user entered one.
-     */
-    if (payload.interestRate !== '') {
+    `${this.backendBaseUrl}/accounts/${accountId}`,
 
-      body.interestRate =
-        payload.interestRate;
+    payload
 
-    }
+  );
 
-    return this.http.put(
-
-      `${this.backendBaseUrl}/accounts/${payload.accountId}`,
-
-      body
-
-    );
-
-  }
+}
 
   /**
    * DELETE /accounts/{accountId}
    *
    * Permanently deletes an account.
    */
-  deleteAccount(
-    accountId: string
-  ): Observable<any> {
+  deleteAccount(accountId: number): Observable<MessageResponse> {
 
-    return this.http.delete(
+    return this.http.delete<MessageResponse>(
 
       `${this.backendBaseUrl}/accounts/${accountId}`
 
@@ -218,28 +145,20 @@ export class AccountService {
  *
  * depositToAccount(payload)
  */
-depositToAccount(payload: any): Observable<any> {
+  depositToAccount(
+  accountId: number,
+  payload: MonetaryRequest,
+  idempotencyKey?: string
+  ): Observable<MonetaryOperationResponse> {
 
-  return this.http.post(
+  return this.http.post<MonetaryOperationResponse>(
 
-    `${this.backendBaseUrl}/accounts/${payload.accountId}/deposit`,
+    `${this.backendBaseUrl}/accounts/${accountId}/deposit`,
 
-    {
-
-      amount: payload.amount,
-
-      description: payload.description ?? null,
-
-      category: payload.category ?? null
-
-    },
+    payload,
 
     {
-
-      headers: this.buildIdempotencyHeaders(
-        payload.idempotencyKey
-      )
-
+      headers: this.buildIdempotencyHeaders(idempotencyKey)
     }
 
   );
@@ -259,27 +178,21 @@ depositToAccount(payload: any): Observable<any> {
  *
  * withdrawFromAccount(payload)
  */
-withdrawFromAccount(payload: any): Observable<any> {
+withdrawFromAccount(
+  accountId: number, 
+  payload: MonetaryRequest, 
+  idempotencyKey?: string
+): Observable<MonetaryOperationResponse> {
 
-  return this.http.post(
+  return this.http.post<MonetaryOperationResponse>(
 
-    `${this.backendBaseUrl}/accounts/${payload.accountId}/withdraw`,
+    `${this.backendBaseUrl}/accounts/${accountId}/withdraw`,
 
-    {
-
-      amount: payload.amount,
-
-      description: payload.description ?? null,
-
-      category: payload.category ?? null
-
-    },
+    payload,
 
     {
 
-      headers: this.buildIdempotencyHeaders(
-        payload.idempotencyKey
-      )
+      headers: this.buildIdempotencyHeaders(idempotencyKey)
 
     }
 
@@ -293,41 +206,22 @@ withdrawFromAccount(payload: any): Observable<any> {
  *
  * Transfers money between two accounts.
  *
- * This also requires an Idempotency-Key
- * because money is moving between accounts.
+ * Matches backend:
+ * TransferRequest DTO
  *
- * React equivalent:
- *
- * transferBetweenAccounts(payload)
+ * An Idempotency-Key header is included to prevent
+ * duplicate transfers if the request is retried.
  */
-transferBetweenAccounts(
-  payload: any
-): Observable<any> {
+transferBetweenAccounts(payload: TransferRequest, idempotencyKey?: string): Observable<TransferResponse> {
 
-  return this.http.post(
+  return this.http.post<TransferResponse>(
 
     `${this.backendBaseUrl}/accounts/transfer`,
 
-    {
-
-      fromAccountId: payload.fromAccountId,
-
-      toAccountId: payload.toAccountId,
-
-      amount: payload.amount,
-
-      description: payload.description ?? null,
-
-      category: payload.category ?? null
-
-    },
+    payload,
 
     {
-
-      headers: this.buildIdempotencyHeaders(
-        payload.idempotencyKey
-      )
-
+      headers: this.buildIdempotencyHeaders(idempotencyKey)
     }
 
   );
@@ -348,23 +242,12 @@ transferBetweenAccounts(
  *
  * freezeAccount(payload)
  */
-freezeAccount(
-  payload: any
-): Observable<any> {
+freezeAccount(accountId: number, payload: FreezeAccountRequest): Observable<AccountControlActionResponse> {
 
-  return this.http.post(
+  return this.http.post<AccountControlActionResponse>(
 
-    `${this.backendBaseUrl}/accounts/${payload.accountId}/freeze`,
-
-    {
-
-      reason: payload.reason,
-
-      reasonCode: payload.reasonCode ?? null,
-
-      notes: payload.notes ?? null
-
-    }
+    `${this.backendBaseUrl}/accounts/${accountId}/freeze`,
+    payload
 
   );
 
@@ -382,21 +265,13 @@ freezeAccount(
  *
  * unfreezeAccount(payload)
  */
-unfreezeAccount(
-  payload: any
-): Observable<any> {
+unfreezeAccount(accountId: number, payload?: UnfreezeAccountRequest): Observable<AccountControlActionResponse> {
 
-  return this.http.post(
+  return this.http.post<AccountControlActionResponse>(
 
-    `${this.backendBaseUrl}/accounts/${payload.accountId}/unfreeze`,
+    `${this.backendBaseUrl}/accounts/${accountId}/unfreeze`,
 
-    {
-
-      reason: payload.reason ?? null,
-
-      notes: payload.notes ?? null
-
-    }
+    payload ?? {}
 
   );
 
@@ -417,11 +292,9 @@ unfreezeAccount(
  *
  * getAccountControlHistory(accountId)
  */
-getAccountControlHistory(
-  accountId: string
-): Observable<any> {
+getAccountControlHistory(accountId: number): Observable<AccountControlHistoryResponse> {
 
-  return this.http.get(
+  return this.http.get<AccountControlHistoryResponse>(
 
     `${this.backendBaseUrl}/accounts/${accountId}/control-history`
 

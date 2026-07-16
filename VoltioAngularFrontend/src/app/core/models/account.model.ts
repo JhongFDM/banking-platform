@@ -1,7 +1,8 @@
 import { AccountType } from '../enums/account-type.enum'
 import { AccountStatus } from '../enums/account-status.enum'
+import { TransactionResponse } from './transaction.model'
 
-export interface Account {
+export interface AccountResponse {
 
   accountId: number;
 
@@ -76,5 +77,29 @@ export interface TransferRequest {
   amount: number;
 
   description?: string | null;
+
+}
+
+/**
+ * Response body for:
+ * 
+ * POST /accounts/transfer
+ * 
+ * Matches backend:
+ * TransferResponse DTO
+ */
+export interface TransferResponse {
+
+  /**
+   * Success message returned by the backend.
+   */
+  message: string;
+
+  fromAccount: AccountResponse;
+  toAccount: AccountResponse;
+
+  debitTransaction: TransactionResponse;
+
+  creditTransaction: TransactionResponse;
 
 }
