@@ -5,8 +5,6 @@ import { mapApiError } from './api-error.mapper';
 
 /**
  * Backend error codes returned by the Savings Goal APIs.
- *
- * Keeping these as constants avoids typos when checking codes.
  */
 const SAVINGS_GOAL_ERROR_MESSAGES: Record<string, string> = {
 
@@ -57,14 +55,6 @@ const SAVINGS_GOAL_ERROR_MESSAGES: Record<string, string> = {
 /**
  * Converts a Savings Goal backend error code
  * into a message shown to the user.
- *
- * Example:
- *
- * Input:
- *   GOAL_ALREADY_EXISTS
- *
- * Output:
- *   An active goal already exists for this account
  */
 export function mapSavingsGoalErrorCode(
   errorCode: string
@@ -74,7 +64,7 @@ export function mapSavingsGoalErrorCode(
   return (
     SAVINGS_GOAL_ERROR_MESSAGES[errorCode]
     ??
-    `Error: ${errorCode}`
+    errorCode
   );
 
 }
@@ -108,33 +98,11 @@ function isSavingsGoalError(
 
 /**
  * Enhanced Savings Goal error mapper.
- *
- * Flow:
- *
- * HttpErrorResponse
- *        |
- *        v
- * mapApiError()
- *        |
- *        v
- * Check Savings Goal code
- *        |
- *        v
- * Replace message if needed
  */
 export function mapSavingsGoalError(
   error: HttpErrorResponse
 ): ApiError {
 
-
-  /*
-   * First apply the generic API mapping.
-   *
-   * This preserves:
-   * - validation handling
-   * - HTTP fallback codes
-   * - fields
-   */
   const baseError =
     mapApiError(error);
 
@@ -143,12 +111,6 @@ export function mapSavingsGoalError(
   /*
    * If this is a known Savings Goal
    * error, replace only the message.
-   *
-   * We intentionally keep:
-   * - code
-   * - field
-   *
-   * unchanged.
    */
   if (
     isSavingsGoalError(baseError.code)

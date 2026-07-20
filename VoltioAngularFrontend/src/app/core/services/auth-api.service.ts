@@ -1,43 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { catchError, throwError } from 'rxjs';
-
-import { mapApiError } from '../errors/api-error.mapper';
+import { Observable, catchError, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 
+import {
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  UserResponse
+} from '../models/auth.model';
 
-/**
- * Shape of the login request.
- *
- * Adjust fields to match your backend.
- */
-export interface LoginRequest {
-
-  username: string;
-
-  password: string;
-
-}
-
-
-/**
- * Shape returned by your backend after login/register.
- *
- * Update this based on the actual API response.
- */
-export interface AuthResponse {
-
-  accessToken: string;
-
-  refreshToken?: string;
-
-  expiresAt?: number;
-
-  customerId?: string;
-
-}
+import { mapApiError } from '../errors/api-error.mapper';
 
 
 @Injectable({
@@ -46,18 +20,8 @@ export interface AuthResponse {
 export class AuthApiService {
 
 
-  /*
-   * Base backend URL.
-   *
-   * This replaces:
-   *
-   * axios.create({
-   *    baseURL: mergedBackendBaseUrl
-   * })
-   */
   private readonly backendBaseUrl =
     environment.backendBaseUrl;
-
 
 
   constructor(
@@ -65,66 +29,45 @@ export class AuthApiService {
   ) {}
 
 
+  register(
+    payload: RegisterRequest
+  ): Observable<UserResponse> {
 
-  /**
-   * Registers a new user.
-   *
-   * React equivalent:
-   *
-   * registerUser(payload)
-   */
-    register(
-    payload: unknown
-    ): Observable<AuthResponse> {
+    return this.http.post<UserResponse>(
 
-    return this.http.post<AuthResponse>(
+      `${this.backendBaseUrl}/api/auth/register`,
 
-    `${this.backendBaseUrl}/api/auth/register`,
-
-    payload
+      payload
 
     ).pipe(
 
-    catchError(error => {
+      catchError(error =>
+        throwError(() => mapApiError(error))
+      )
 
-      return throwError(() => mapApiError(error));
+    );
 
-    })
-
-  );
-
-}
+  }
 
 
+  login(
+    payload: LoginRequest
+  ): Observable<AuthResponse> {
 
-  /**
-   * Logs a user in.
-   *
-   * React equivalent:
-   *
-   * loginUser(payload)
-   */
-login(
-  payload: LoginRequest
-): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
 
-  return this.http.post<AuthResponse>(
+      `${this.backendBaseUrl}/api/auth/login`,
 
-    `${this.backendBaseUrl}/api/auth/login`,
+      payload
 
-    payload
+    ).pipe(
 
-  ).pipe(
+      catchError(error =>
+        throwError(() => mapApiError(error))
+      )
 
-    catchError(error => {
+    );
 
-      return throwError(() => mapApiError(error));
-
-    })
-
-  );
-
-}
-
+  }
 
 }

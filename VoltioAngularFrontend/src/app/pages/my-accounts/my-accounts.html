@@ -14,14 +14,15 @@
 </div>
 
 <div class="stack">
+  <!-- Accounts Section -->
   <section class="panel stack">
     <div class="page-header-row">
       <div>
         <h2>
-          {{ isAdmin && customer()?.name ? customer().name + "'s Accounts" : 'My Accounts' }}
+          {{ isAdmin && customer()?.name ? customer()?.name + "'s Accounts" : 'My Accounts' }}
         </h2>
         <p class="muted text-top-muted">
-          {{ isAdmin && customer()?.name ? 'View and manage ' + customer().name + "'s accounts." : 'View and manage your accounts.' }}
+          {{ isAdmin && customer()?.name ? 'View and manage ' + customer()?.name + "'s accounts." : 'View and manage your accounts.' }}
         </p>
       </div>
       <button type="button" class="btn-primary" (click)="openCreateModal()">Create Account</button>
@@ -32,7 +33,7 @@
         <label for="accounts-customer-switcher">Admin Customer Switcher (Mock)</label>
         <select id="accounts-customer-switcher" (change)="handleCustomerSwitch($event)">
           @for (customerOption of customerList(); track customerOption.customerId) {
-            <option [value]="customerOption.customerId" [selected]="customerOption.customerId === customer().customerId">
+            <option [value]="customerOption.customerId" [selected]="customerOption.customerId === customer()?.customerId">
               {{ customerOption.customerId }} - {{ customerOption.name }}
             </option>
           }
@@ -47,9 +48,9 @@
             <a class="account-card" [routerLink]="['/accounts', account.accountId]">
               <div class="account-card-header">
                 <span class="account-card-type">
-                    {{ account.accountType }}
-                    @if (account.accountType === 'TFSA') { <span class="badge">Tax-Free</span> }
-                    @if (account.status === 'FROZEN') { <span class="badge badge-warning">Frozen</span> }
+                  {{ account.accountType }}
+                  @if (account.accountType === 'TFSA') { <span class="badge">Tax-Free</span> }
+                  @if (account.status === 'FROZEN') { <span class="badge badge-warning">Frozen</span> }
                 </span>
                 <span class="account-card-id">{{ account.accountId }}</span>
               </div>
@@ -75,6 +76,7 @@
     </section>
   </section>
 
+  <!-- Savings Goals Section -->
   @if (!isAdmin) {
     <section class="panel stack">
       <div class="page-header-row">
@@ -90,23 +92,42 @@
             @if (goalsByAccountId()[account.accountId]; as goal) {
               <div class="goal-card">
                 <div class="goal-card-details">
-                  <h4>{{ goal.name }}</h4>
-                  <p class="muted">Target: ${{ goal.target }} | Current: ${{ goal.current }}</p>
-                  <div class="progress-bar-container">
-                    <div class="progress-bar-fill" [style.width.%]="(goal.current / goal.target) * 100"></div>
+                  <div class="goal-card-header-row">
+                    <h4>{{ goal.goalName }}</h4>
+                    @if (goal.status) {
+                      <span class="badge">{{ goal.status }}</span>
+                    }
                   </div>
+                  <p class="muted">
+                    Target: ${{ goal.targetAmount }} | Current: ${{ goal.currentBalance }}
+                  </p>
+
+                  <div class="progress-bar-container">
+                    <div 
+                      class="progress-bar-fill" 
+                      [style.width.%]="goal.progressPercentage ?? 0">
+                    </div>
+                  </div>
+
+                  @if (goal.timeRemainingDays !== undefined && goal.timeRemainingDays !== null) {
+                    <p class="field-hint">{{ goal.timeRemainingDays }} days remaining</p>
+                  }
                 </div>
-                <button type="button" class="btn-danger-link" (click)="handleDeleteGoal(goal)">Delete Goal</button>
+
+                <div class="goal-card-actions">
+                  <button type="button" class="secondary" (click)="handleEditGoal(goal)">Edit</button>
+                  <button type="button" class="btn-danger-link" (click)="handleDeleteGoal(goal)">Delete</button>
+                </div>
               </div>
             } @else {
               <div class="goal-empty-card">
                 <div class="goal-empty-info">
                   <span class="goal-empty-account">
-                    {{ account.accountType }} ···· {{ account.accountNumber?.slice(-4) }}
+                    {{ account.accountType }} ···· {{ account.accountId.toString().padStart(4, '0').slice(-4) }}
                   </span>
                   <span class="goal-empty-label">No savings goal set yet</span>
                 </div>
-                <button type="button" class="secondary" (click)="goalCreationAccountId = account.accountId; isGoalCreationOpen = true;">
+                <button type="button" class="secondary" (click)="openGoalCreation(account)">
                   + Add a goal
                 </button>
               </div>
@@ -117,6 +138,7 @@
     </section>
   }
 
+  <!-- Modal: Create Account -->
   @if (isCreateModalOpen) {
     <div class="modal-backdrop" (click)="closeCreateModal()">
       <div class="modal-panel stack" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">

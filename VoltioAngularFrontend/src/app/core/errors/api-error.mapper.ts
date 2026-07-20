@@ -20,57 +20,72 @@ export interface ApiError {
 
 /**
  * Extract the first validation error message.
- *
- * Handles backend responses like:
- *
- * errors: [
- *   {
- *      defaultMessage: "Amount is required"
- *   }
- * ]
  */
 function firstValidationError(
   errors: unknown
 ): string | null {
 
 
-  if (
-    !Array.isArray(errors) ||
-    errors.length === 0
-  ) {
-
+  if (!errors) {
     return null;
-
   }
 
 
-  const firstError = errors[0];
-
-
-  if (typeof firstError === 'string') {
-
-    return firstError;
-
-  }
-
-
+  // Spring validation format:
+  // {
+  //   "amount": "amount must be positive"
+  // }
   if (
-    typeof firstError === 'object' &&
-    firstError !== null
+    typeof errors === 'object' &&
+    !Array.isArray(errors)
   ) {
 
-    const error =
-      firstError as any;
+    const values =
+      Object.values(errors as Record<string, unknown>);
 
 
-    return (
-      error.defaultMessage ||
-      error.message ||
-      null
-    );
+    return typeof values[0] === 'string'
+      ? values[0]
+      : null;
 
   }
 
+
+  // Array format:
+  // [
+  //   {
+  //     defaultMessage:"..."
+  //   }
+  // ]
+  if (
+    Array.isArray(errors) &&
+    errors.length > 0
+  ) {
+
+    const firstError = errors[0];
+
+
+    if (typeof firstError === 'string') {
+      return firstError;
+    }
+
+
+    if (
+      typeof firstError === 'object' &&
+      firstError !== null
+    ) {
+
+      const error = firstError as any;
+
+      return (
+        error.defaultMessage ||
+        error.message ||
+        null
+      );
+
+    }
+
+  }
 
   return null;
 
@@ -80,10 +95,6 @@ function firstValidationError(
 /**
  * Converts any backend HTTP error into
  * the application's standard error format.
- *
- * Replaces:
- *
- * mapAxiosError(error)
  */
 export function mapApiError(
   error: HttpErrorResponse
@@ -98,12 +109,6 @@ export function mapApiError(
       data?.errors
     );
 
-
-  /*
-   * Special account restriction message.
-   *
-   * Keeps existing React behavior.
-   */
   if (
     data?.code ===
     'ACCOUNT_TEMPORARILY_RESTRICTED'
@@ -123,17 +128,6 @@ export function mapApiError(
 
   }
 
-
-
-  /*
-   * Backend returned:
-   *
-   * {
-   *   code,
-   *   message,
-   *   field
-   * }
-   */
   if (
     data?.code ||
     data?.message
@@ -158,11 +152,6 @@ export function mapApiError(
   }
 
 
-
-  /*
-   * Validation errors without
-   * code/message at the root.
-   */
   if (validationMessage) {
 
     return {
@@ -180,10 +169,6 @@ export function mapApiError(
   }
 
 
-
-  /*
-   * Backend returned plain text.
-   */
   if (
     typeof data === 'string' &&
     data.trim().length > 0

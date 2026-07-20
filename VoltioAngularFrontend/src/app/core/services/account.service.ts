@@ -12,8 +12,6 @@ import { FreezeAccountRequest, UnfreezeAccountRequest, AccountControlActionRespo
 /**
  * Angular service responsible for communicating
  * with all Account-related backend endpoints.
- *
- * This replaces the React accountApiClient wrapper.
  */
 @Injectable({
   providedIn: 'root'
@@ -47,10 +45,6 @@ export class AccountService {
    * GET /accounts/{accountId}
    *
    * Retrieves a single account.
-   *
-   * React equivalent:
-   *
-   * accountApiClient.get(...)
    */
   getAccount(accountId: number): Observable<AccountResponse> {
 
@@ -67,9 +61,6 @@ export class AccountService {
    *
    * Returns every account belonging
    * to a customer.
-   *
-   * The React code handled several
-   * possible response formats.
    */
   listCustomerAccounts(customerId: number): Observable<AccountResponse[]> {
 
@@ -85,9 +76,6 @@ export class AccountService {
    * POST /customers/{customerId}/accounts
    *
    * Creates a new account.
-   *
-   * The request body depends on
-   * the account type.
    */
   createAccount(customerId: number, payload: CreateAccountRequest): Observable<AccountResponse> {
 
@@ -140,10 +128,6 @@ export class AccountService {
  * This endpoint requires an Idempotency-Key header
  * to prevent duplicate deposits if the user
  * accidentally submits the request multiple times.
- *
- * React equivalent:
- *
- * depositToAccount(payload)
  */
   depositToAccount(
   accountId: number,
@@ -173,10 +157,6 @@ export class AccountService {
  *
  * Like deposits, withdrawals use an
  * Idempotency-Key to prevent duplicate requests.
- *
- * React equivalent:
- *
- * withdrawFromAccount(payload)
  */
 withdrawFromAccount(
   accountId: number, 
@@ -237,10 +217,6 @@ transferBetweenAccounts(payload: TransferRequest, idempotencyKey?: string): Obse
  * The backend expects a reason and
  * optionally accepts a reason code
  * and additional notes.
- *
- * React equivalent:
- *
- * freezeAccount(payload)
  */
 freezeAccount(accountId: number, payload: FreezeAccountRequest): Observable<AccountControlActionResponse> {
 
@@ -260,10 +236,6 @@ freezeAccount(accountId: number, payload: FreezeAccountRequest): Observable<Acco
  * Removes the freeze from an account.
  *
  * Reason and notes are optional.
- *
- * React equivalent:
- *
- * unfreezeAccount(payload)
  */
 unfreezeAccount(accountId: number, payload?: UnfreezeAccountRequest): Observable<AccountControlActionResponse> {
 
@@ -282,15 +254,6 @@ unfreezeAccount(accountId: number, payload?: UnfreezeAccountRequest): Observable
  * GET /accounts/{accountId}/control-history
  *
  * Retrieves the account's control history.
- *
- * This includes actions such as:
- * - freezes
- * - unfreezes
- * - other administrative controls
- *
- * React equivalent:
- *
- * getAccountControlHistory(accountId)
  */
 getAccountControlHistory(accountId: number): Observable<AccountControlHistoryResponse> {
 

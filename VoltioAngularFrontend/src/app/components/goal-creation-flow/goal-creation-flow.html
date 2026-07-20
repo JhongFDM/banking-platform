@@ -1,0 +1,48 @@
+<div class="goal-flow-panel stack">
+  <div class="section-header">
+    <h3>Set Savings Goal</h3>
+    <p class="muted">Account: {{ accountNumber }}</p>
+  </div>
+
+  <form class="stack" (submit)="onSubmit($event)">
+    <div class="field">
+      <label for="goalName">Goal Name</label>
+      <input 
+        id="goalName" 
+        name="goalName" 
+        type="text" 
+        placeholder="e.g., Vacation Fund, Emergency Cushion"
+        [(ngModel)]="formData.goalName" 
+        required />
+    </div>
+
+    <div class="field">
+      <label for="targetAmount">Target Amount ($)</label>
+      <input 
+        id="targetAmount" 
+        name="targetAmount" 
+        type="number" 
+        min="1" 
+        step="0.01"
+        [(ngModel)]="formData.targetAmount" 
+        required />
+    </div>
+
+    <div class="field">
+      <label for="targetDate">Target Date (YYYY-MM-DD)</label>
+      <input 
+        id="targetDate" 
+        name="targetDate" 
+        type="date" 
+        [(ngModel)]="formData.targetDate" 
+        required />
+    </div>
+
+    <div class="actions space-between-actions">
+      <button type="button" class="secondary" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isLoading || !formData.goalName || !formData.targetDate">
+        {{ isLoading ? 'Saving...' : 'Create Goal' }}
+      </button>
+    </div>
+  </form>
+</div>

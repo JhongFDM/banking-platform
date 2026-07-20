@@ -6,6 +6,8 @@ import { routes } from './app.routes';
 import {apiErrorInterceptor} from './core/interceptors/api-error.interceptor';
 import {authInterceptor} from './core/interceptors/auth.interceptor'
 import {sessionExpiredInterceptor} from './core/interceptors/session-expired.interceptor'
+import {authErrorInterceptor} from './core/interceptors/auth-error.interceptor'
+import {idempotencyInterceptor} from './core/interceptors/idempotency.interceptor'
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,7 +17,9 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([
         authInterceptor,
         sessionExpiredInterceptor,
-        apiErrorInterceptor
+        apiErrorInterceptor,
+        authErrorInterceptor,
+        idempotencyInterceptor
       ])
     )
   ]

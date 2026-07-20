@@ -1,10 +1,12 @@
-/**
- * Request body for:
- *
- * POST /api/auth/login
- *
- * Mirrors the backend LoginRequest DTO.
- */
+import { AccountResponse } from './account.model';
+
+
+export enum RoleName {
+  CUSTOMER = 'CUSTOMER',
+  ADMIN = 'ADMIN'
+}
+
+
 export interface LoginRequest {
 
   username: string;
@@ -14,17 +16,6 @@ export interface LoginRequest {
 }
 
 
-/**
- * Request body for:
- *
- * POST /api/auth/register
- *
- * Update this interface to exactly match your
- * backend RegisterRequest DTO.
- *
- * (The fields below are examples if you haven't
- * looked at the backend DTO yet.)
- */
 export interface RegisterRequest {
 
   username: string;
@@ -36,14 +27,6 @@ export interface RegisterRequest {
 }
 
 
-/**
- * Response returned by:
- *
- * POST /api/auth/login
- * POST /api/auth/register
- *
- * Mirrors the backend AuthResponse DTO.
- */
 export interface AuthResponse {
 
   accessToken: string;
@@ -52,10 +35,26 @@ export interface AuthResponse {
 
   tokenType: string;
 
-  /**
-   * Number of seconds until the access token expires.
-   */
   expiresIn: number;
+
+}
+
+
+export interface UserResponse {
+
+  userId: string;
+
+  username: string;
+
+  roles: RoleName[];
+
+  externalSubjectId?: string;
+
+  customerId?: number;
+
+  active: boolean;
+
+  createdAt: string;
 
 }
 
@@ -84,21 +83,5 @@ export interface AuthState {
    *   Date.now() + (expiresIn * 1000)
    */
   expiresAt: number | null;
-
-}
-
-/**
- * Matches backend:
- *
- * com.group1.banking.enums.RoleName
- *
- * Update these values if your backend enum
- * contains additional roles.
- */
-export enum RoleName {
-
-  CUSTOMER = 'CUSTOMER',
-
-  ADMIN = 'ADMIN'
 
 }
