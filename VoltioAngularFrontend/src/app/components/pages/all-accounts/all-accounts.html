@@ -1,0 +1,62 @@
+<div class="admin-container">
+  <section class="card filter-card">
+    <div class="card-header-title-wrapper">
+      <h2>All Accounts</h2>
+      <p class="subtitle">Every account across all customers.</p>
+    </div>
+
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Search</label>
+        <input 
+          type="text" 
+          placeholder="Account ID or Customer ID..." 
+          [ngModel]="searchQuery()" 
+          (ngModelChange)="searchQuery.set($event)" 
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Account Type</label>
+        <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)">
+          <option value="ALL">All Types</option>
+          <option value="SAVINGS">Savings</option>
+          <option value="CHECKING">Checking</option>
+          <option value="TFSA">TFSA</option>
+          <option value="RRSP">RRSP</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="card table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Account ID</th>
+          <th>Customer ID</th>
+          <th>Type</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of filteredAccounts(); track item.id) {
+          <tr>
+            <td class="highlight-id">{{ item.id }}</td>
+            <td class="customer-id">{{ item.customerId }}</td>
+            <td>{{ item.type }}</td>
+            <td>
+              <span class="status-badge" [class]="item.status.toLowerCase()">
+                {{ item.status }}
+              </span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="empty-state">No accounts found matching search criteria.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</div>

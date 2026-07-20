@@ -9,5 +9,5 @@ import { Component, Input } from '@angular/core';
 export class Button {
 
   @Input() label: string = '';
-  @Input() type: 'primary' | 'secondary' = 'secondary'; 
+  @Input() type: 'primary' | 'secondary' | 'avatar' = 'secondary'; 
 }

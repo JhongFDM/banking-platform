@@ -35,3 +35,19 @@
 .secondary:hover {
   background-color: var(--btn-secondary-hover);
 }
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: var(--brand-accent);
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.avatar:hover {
+  background-color: var(--brand-accent-hover);
+}
