@@ -1,0 +1,14 @@
+<label class="toggle-container" (click)="onToggle()">
+  @if (label) {
+    <span class="toggle-label">{{ label }}</span>
+  }
+  <div class="switch" [class.checked]="checked">
+    <div class="thumb">
+      @if (checked) {
+        <span class="icon">🌙</span>
+      } @else {
+        <span class="icon">☀️</span>
+      }
+    </div>
+  </div>
+</label>
