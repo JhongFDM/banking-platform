@@ -1,0 +1,41 @@
+<div class="customer-page">
+<section class="customer-card customer-stack">
+    <div class="customer-head">
+        <p class="customer-eyebrow">POST /api/customers</p>
+        <h2>Create Customer Profile</h2>
+        <p class="customer-muted">Create the authenticated user&apos;s customer profile in the merged backend.</p>
+    </div>
+    @if(error()) {
+    <div class="customer-banner customer-banner-error">*Error Message here*</div>
+    }
+    <form class="customer-stack" (submit)="handleSubmit()">
+        <div class="customer-form-grid">
+            <div class="customer-field">
+                <label for="customer-name">Name</label>
+                <input id="customer-name" [value]="customers[0].name" />
+            </div>
+            <div class="customer-field">
+                <label for="customer-type">Customer Type</label>
+                <select id="customer-type" [(ngModel)]="selectedType" [ngModelOptions]="{standalone: true}">
+                    @for(type of types; track type){
+                    <option [value]="type">{{type}}</option>
+                    }
+                </select>
+            </div>
+            <div class="customer-field customer-field-full">
+                <label for="customer-address">Address</label>
+                <input id="customer-address" [value]="customers[0].address" />
+            </div>
+            @if(selectedType === 'Company') {
+            <div class="customer-field customer-field-full">
+                <label for="customer-gbn">Government Business Number</label>
+                <input id="customer-gbn" placeholder="9-digit number" maxlength="9" pattern="[0-9]{9}" value="" />
+            </div>
+            }
+        </div>
+        <div class="customer-actions">
+            <button type="submit" disabled>Create Customer</button>
+        </div>
+    </form>
+</section>
+</div>

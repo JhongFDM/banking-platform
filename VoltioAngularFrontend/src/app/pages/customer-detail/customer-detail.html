@@ -1,0 +1,84 @@
+<div class="customer-page customer-stack">
+    <section class="customer-card customer-stack">
+        <div class="customer-head customer-head-split">
+            <div>
+                <p class="customer-eyebrow">{{"GET /api/customers/{customerId}"}}</p>
+                <h2>Customer Profile</h2>
+                <p class="customer-muted">
+                    @if(isAdmin) {
+                    Select a customer to open that profile.
+                    } @else {
+                    View the stored customer profile and branch into the account flows.
+                    }
+                </p>
+            </div>
+        </div>
+
+        @if (isAdmin) {
+        <div class="customer-field">
+            <label for="customer-switcher">Admin Customer Switcher</label>
+
+            <select id="customer-switcher">
+                <option value="">Select customer</option>
+                @for(customer of customers; track customer.id) {
+                <option [value]="customer.id">
+                    {{customer.id}} - {{customer.name}}
+                </option>
+                }
+            </select>
+        </div>
+        }
+        <section class="customer-card customer-stack">
+            <div class="customer-detail-grid">
+
+                @if(isAdmin) {
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Customer ID</p>
+                    <strong>{{customers[0].id}}</strong>
+                </article>
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Name</p>
+                    <strong>{{customers[0].name}}</strong>
+                </article>
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Type</p>
+                    <strong>{{customers[0].type}}</strong>
+                </article>
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Address</p>
+                    <strong>{{customers[0].address}}</strong>
+                </article>
+
+                } @else {
+                    <!-- Customer view and should be changed to customer data -->
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Customer ID</p>
+                    <strong>{{customers[0].id}}</strong>
+                </article>
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Name</p>
+                    <strong>{{customers[0].name}}</strong>
+                </article>
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Type</p>
+                    <strong>{{customers[0].type}}</strong>
+                </article>
+                <article class="customer-detail-item">
+                    <p class="customer-muted">Address</p>
+                    <strong>{{customers[0].address}}</strong>
+                </article>
+                }
+            </div>
+            <div class="customer-actions">
+                <app-button label="Edit Customer" [link]="'/home/customer-edit'" type="primary"></app-button>
+                <app-button label="Accounts" [link]="'/'" type="primary"></app-button>
+                @if(isAdmin) {
+                <button type="button" class="customer-danger">Delete Customer</button>
+                }
+            </div>
+        </section>
+        @if(isAdmin) {
+        <div class="customer-banner customer-banner-success">Choose a customer from the switcher to load their profile.</div>
+        }
+    </section>
+</div>

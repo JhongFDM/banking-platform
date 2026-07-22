@@ -17,3 +17,112 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Shared customer page styles */
+.customer-page {
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.customer-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--btn-secondary);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.customer-stack {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.customer-head h2 {
+  margin: 0;
+}
+
+.customer-eyebrow {
+  margin: 0 0 0.15rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.customer-muted {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.customer-form-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.customer-field {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.customer-field-full {
+  grid-column: 1 / -1;
+}
+
+.customer-field label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.customer-field input,
+.customer-field select,
+.customer-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--btn-secondary);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  padding: 0.62rem 0.72rem;
+  font: inherit;
+}
+
+.customer-field input:focus,
+.customer-field select:focus,
+.customer-field textarea:focus {
+  outline: none;
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.18);
+}
+
+.customer-actions {
+  display: flex;
+  gap: 0.55rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.customer-banner {
+  border-radius: 8px;
+  border: 1px solid;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.customer-banner-success {
+  border-color: var(--success-green);
+  color: var(--success-green);
+  background: rgba(0, 200, 83, 0.1);
+}
+
+.customer-banner-error {
+  border-color: var(--brand-accent);
+  color: #ff7c82;
+  background: rgba(229, 9, 20, 0.12);
+}
+
+@media (max-width: 700px) {
+  .customer-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
