@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
-import { Home } from './pages/home/home';
+import { Home } from './components/pages/home/home';
+import { adminGuard } from './core/guards/admin-guard';
+import { defaultRouteGuard } from './core/guards/default-route-guard';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -7,27 +9,44 @@ export const routes: Routes = [
         path: 'home',
         component: Home,
         children: [
-            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-            {
-                path: 'dashboard', loadComponent: () => import('./pages/dashboard/dashboard').then(m => m.Dashboard)
+            { 
+                path: '', 
+                canActivate: [defaultRouteGuard],
+                children: [] 
+            },
+            { 
+                path: 'profile', loadComponent: () => import('./components/pages/profile/profile').then(m => m.Profile) 
             },
             {
-                path: 'my-accounts', loadComponent: () => import('./pages/my-accounts/my-accounts').then(m => m.MyAccounts)
+                path: 'dashboard', loadComponent: () => import('./components/pages/dashboard/dashboard').then(m => m.Dashboard)
             },
             {
-                path: 'transfer-funds', loadComponent: () => import('./pages/transfer-funds/transfer-funds').then(m => m.TransferFunds)
+                path:'my-accounts', loadComponent: () => import('./components/pages/my-accounts/my-accounts').then(m => m.MyAccounts)
             },
             {
-                path: 'transactions', loadComponent: () => import('./pages/transactions/transactions').then(m => m.Transactions)
+                path:'transfer-funds', loadComponent: () => import('./components/pages/transfer-funds/transfer-funds').then(m => m.TransferFunds)
             },
             {
-                path: 'monthly-statements', loadComponent: () => import('./pages/monthly-statements/monthly-statements').then(m => m.MonthlyStatements)
+                path:'transactions', loadComponent: () => import('./components/pages/transactions/transactions').then(m => m.Transactions)
             },
             {
-                path: 'spending-insights', loadComponent: () => import('./pages/spending-insights/spending-insights').then(m => m.SpendingInsights)
+                path: 'monthly-statements', loadComponent: () => import('./components/pages/monthly-statements/monthly-statements').then(m => m.MonthlyStatements)
             },
             {
-                path: 'standing-orders', loadComponent: () => import('./pages/standing-orders/standing-orders').then(m => m.StandingOrders)
+                path: 'spending-insights', loadComponent: () => import('./components/pages/spending-insights/spending-insights').then(m => m.SpendingInsights)
+            },
+            {
+                path: 'standing-orders', loadComponent: () => import('./components/pages/standing-orders/standing-orders').then(m => m.StandingOrders)
+            },
+            { 
+                path: 'all-accounts', 
+                loadComponent: () => import('./components/pages/all-accounts/all-accounts').then(m => m.AllAccounts),
+                canActivate: [adminGuard]
+            },
+            { 
+                path: 'customers', 
+                loadComponent: () => import('./components/pages/customers/customers').then(m => m.Customers),
+                canActivate: [adminGuard]
             },
             {
                 path: 'customer-detail', loadComponent: () => import('./pages/customer-detail/customer-detail').then(m => m.CustomerDetail)

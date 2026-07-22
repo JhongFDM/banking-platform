@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { Customer } from '../../models/customer';
 import { MOCK_CUSTOMERS } from '../../mock-data/customer_for_admin';
-import { Button } from '../../shared-components/button/button';
+import { Button } from '../../components/shared-components/button/button';
 
 @Component({
   selector: 'app-customer-edit',

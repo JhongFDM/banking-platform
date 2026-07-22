@@ -10,6 +10,6 @@ import { RouterModule } from '@angular/router';
 export class Button {
 
   @Input() label: string = '';
-  @Input() type: 'primary' | 'secondary' = 'secondary';
+  @Input() type: 'primary' | 'secondary' | 'avatar' = 'secondary'; 
   @Input() link: string = '';
 }

@@ -1,0 +1,12 @@
+@if (navItems().length > 0) {
+  <nav class="nav-bar">
+    @for (item of navItems(); track item.link) {
+      <button 
+        class="nav-btn" 
+        [routerLink]="item.link" 
+        routerLinkActive="active">
+        {{ item.label }}
+      </button>
+    }
+  </nav>
+}

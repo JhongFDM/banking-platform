@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
-import { Offer } from '../../models/offer';
-import { Badge } from '../../shared-components/badge/badge';
+import { Offer } from '../../../models/offer';
+import { Badge } from '../badge/badge';
 
 @Component({
   selector: 'app-slider',
