@@ -3,26 +3,26 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
-import { AccountService } from '../../core/services/account.service';
-import { CustomerService } from '../../core/services/customer.service';
-import { JwtService } from '../../core/auth/jwt.service';
-import { SavingsGoalService } from '../../core/services/savings-goal.service';
+import { AccountService } from '../../../core/services/account.service';
+import { CustomerService } from '../../../core/services/customer.service';
+import { JwtService } from '../../../core/auth/jwt.service';
+import { SavingsGoalService } from '../../../core/services/savings-goal.service';
 
 import {
   AccountResponse,
   CreateAccountRequest
-} from '../../core/models/account.model';
+} from '../../../core/models/account.model';
 
-import { CustomerResponse } from '../../core/models/customer.model';
+import { CustomerResponse } from '../../../core/models/customer.model';
 import {
   SavingsGoalRequest,
   SavingsGoalResponse
-} from '../../core/models/savings-goal.model';
+} from '../../../core/models/savings-goal.model';
 
 // Child components
-import { GoalCreationFlowComponent, GoalFormData } from '../../components/goal-creation-flow/goal-creation-flow';
-import { GoalEditFormComponent } from '../../components/goal-edit-form/goal-edit-form';
-import {SavingsGoalCardComponent} from '../../components/savings-goal-card/savings-goal-card';
+import { GoalCreationFlowComponent, GoalFormData } from '../../../components/goal-creation-flow/goal-creation-flow';
+import { GoalEditFormComponent } from '../../../components/goal-edit-form/goal-edit-form';
+import {SavingsGoalCardComponent} from '../../../components/savings-goal-card/savings-goal-card';
 
 @Component({
   selector: 'app-my-accounts',

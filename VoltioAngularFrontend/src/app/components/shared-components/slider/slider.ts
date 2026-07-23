@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
-import { Offer } from '../../core/models/offer';
+import { Offer } from '../../../core/models/offer';
 import { Badge } from '../../shared-components/badge/badge';
 
 @Component({

@@ -1,0 +1,52 @@
+<header class="header-container">
+  <div class="top-header">
+    <div class="logo">
+      <img [src]="voltioLogo" alt="VoltioLogo" class="logo-image" routerLink="/">
+    </div>
+
+    <div class="action-buttons">
+      <!-- Theme Toggle Switch -->
+      <app-toggle 
+        label="Theme"
+        [checked]="themeService.currentTheme() === 'dark'"
+        (toggled)="themeService.toggleTheme()">
+      </app-toggle>
+
+      @if (authService.isLoggedIn()) {
+        <!-- Profile Dropdown Wrapper -->
+        <div class="profile-menu-container">
+          <app-button 
+            type="avatar" 
+            title="Account Menu">
+            {{ authService.currentUser()?.name?.charAt(0) }}
+          </app-button>
+
+          <!-- Dropdown Menu -->
+          <div class="dropdown-menu">
+            <div class="user-info-header">
+              <p class="user-name">{{ authService.currentUser()?.name }}</p>
+              <p class="user-role">{{ authService.userRole() }}</p>
+            </div>
+            <hr class="dropdown-divider">
+            
+            <div class="dropdown-buttons">
+              <app-button 
+                type="secondary" 
+                label="👤 View Profile" 
+                routerLink="/home/profile">
+              </app-button>
+
+              <app-button 
+                type="primary" 
+                label="🚪 Logout" 
+                (click)="authService.logout()">
+              </app-button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <app-nav-bar></app-nav-bar>
+</header>

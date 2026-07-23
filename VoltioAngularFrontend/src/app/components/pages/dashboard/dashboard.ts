@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Slider } from '../../components/slider/slider';
+import { Slider } from '../../shared-components/slider/slider';
 import { Button } from '../../shared-components/button/button';
 
 @Component({
