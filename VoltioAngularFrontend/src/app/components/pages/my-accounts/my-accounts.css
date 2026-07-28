@@ -1,0 +1,349 @@
+/* ── Theme Design Tokens ────────────────────────────────────── */
+:host {
+  /* Dark Cyberpunk Theme Base (Default) */
+  --bg-primary: #050816;
+  --bg-secondary: #0b1020;
+  --card-bg: #111827;
+  --panel-bg: #172033;
+
+  --neon-primary: #00e5ff;
+  --neon-secondary: #a855f7;
+
+  --success: #39ff88;
+  --warning: #ffd166;
+  --error: #ff4d6d;
+
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+
+  --border: #26344d;
+  --disabled: #475569;
+
+  --glow-primary: 0 0 5px rgba(0, 229, 255, 0.4), 0 0 15px rgba(0, 229, 255, 0.2);
+  --glow-secondary: 0 0 5px rgba(168, 85, 247, 0.4), 0 0 15px rgba(168, 85, 247, 0.2);
+  --glow-success: 0 0 5px rgba(57, 255, 136, 0.35), 0 0 15px rgba(57, 255, 136, 0.18);
+  --glow-danger: 0 0 5px rgba(255, 77, 109, 0.38), 0 0 15px rgba(255, 77, 109, 0.2);
+  --focus-ring: 0 0 0 3px rgba(0, 229, 255, 0.15);
+  --surface-shadow: 0 24px 70px rgba(3, 10, 24, 0.55);
+  --transition-ui: 240ms ease;
+
+  /* Style Aliases */
+  --bg: var(--bg-primary);
+  --panel: var(--card-bg);
+  --panel-strong: var(--panel-bg);
+  --ink: var(--text-primary);
+  --muted: var(--text-muted);
+  --accent: var(--neon-primary);
+  --accent-strong: #7bf3ff;
+  --accent-soft: rgba(0, 229, 255, 0.14);
+  --danger: var(--error);
+  --danger-strong: #ff6b85;
+  --shadow: var(--surface-shadow);
+  
+  display: block;
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--ink);
+}
+
+/* ── Structural Layouts ──────────────────────────────────────── */
+.stack {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  padding: 1.4rem;
+}
+
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+h2, h3, h4 {
+  margin: 0;
+  line-height: 1.05;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.text-top-muted {
+  margin-top: 0.25rem;
+}
+
+/* ── Notification Banner Alerts ────────────────────────────── */
+.banner-stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.banner {
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  font-size: 0.95rem;
+}
+
+.banner.error {
+  background: rgba(255, 77, 109, 0.14);
+  color: #ffc8d2;
+  border: 1px solid rgba(255, 77, 109, 0.4);
+}
+
+.banner.success {
+  background: rgba(57, 255, 136, 0.12);
+  color: #aaffce;
+  border: 1px solid rgba(57, 255, 136, 0.35);
+}
+
+.banner.info {
+  background: rgba(255, 209, 102, 0.14);
+  color: #ffe6a8;
+  border: 1px solid rgba(255, 209, 102, 0.35);
+}
+
+/* ── Interactive Input Fields & Selectors ───────────────────── */
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+input, select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font: inherit;
+  transition: border-color var(--transition-ui), box-shadow var(--transition-ui), background var(--transition-ui);
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--neon-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* ── Action Buttons ─────────────────────────────────────────── */
+button {
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.9rem 1.2rem;
+  background: var(--neon-primary);
+  color: var(--bg-primary);
+  cursor: pointer;
+  box-shadow: var(--glow-primary);
+  transition: transform var(--transition-ui), background var(--transition-ui), box-shadow var(--transition-ui), filter var(--transition-ui);
+}
+
+button:hover {
+  filter: brightness(1.08);
+  transform: scale(1.02);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5), 0 0 18px rgba(0, 229, 255, 0.3);
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--neon-secondary);
+  border: 1px solid var(--neon-secondary);
+  box-shadow: none;
+}
+
+button.secondary:hover {
+  background: rgba(168, 85, 247, 0.1);
+  box-shadow: var(--glow-secondary);
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+  border-color: var(--disabled);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.centered-actions {
+  justify-content: center;
+}
+
+/* ── Bank Account Grid Layout Cards ─────────────────────────── */
+.accounts-table-shell {
+  overflow: visible;
+}
+
+.account-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.account-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 8px 18px rgba(3, 10, 24, 0.35);
+  text-decoration: none;
+  color: var(--ink);
+  transition: box-shadow var(--transition-ui), border-color var(--transition-ui), transform var(--transition-ui);
+}
+
+a.account-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-primary);
+  border-color: var(--neon-primary);
+}
+
+.account-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.account-card-type {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.account-card-id {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.account-card-balance {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.account-card-total {
+  background: var(--panel-strong);
+  margin-top: 0.5rem;
+}
+
+.account-card-total .account-card-type {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.account-card-total .account-card-balance {
+  font-size: 2rem;
+}
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: rgba(71, 85, 105, 0.3);
+  color: var(--text-muted);
+  margin-left: 0.5rem;
+}
+
+.badge-warning {
+  background: rgba(255, 209, 102, 0.2);
+  color: #fff1c6;
+}
+
+/* ── Savings Goals Widgets ─────────────────────────────────── */
+.goal-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.goal-empty-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: var(--panel);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+}
+
+.goal-empty-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.goal-empty-account {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.goal-empty-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ── Modal Dialog Overlay Box ──────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(3, 10, 24, 0.7);
+}
+
+.modal-panel {
+  width: min(760px, 100%);
+  max-height: min(90vh, 840px);
+  overflow-y: auto;
+  padding: 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--surface-shadow), var(--glow-secondary);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
