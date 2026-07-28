@@ -1,0 +1,38 @@
+<div class="customer-page">
+<section class="customer-card customer-stack">
+    <div class="customer-head">
+        <p class="customer-eyebrow"> {{"PATCH /api/customers/{'{customerId}'}"}} </p>
+        <h2>Edit Customer</h2>
+    </div>
+
+    @if(success()){
+    <div class="customer-banner customer-banner-success">Successfully Updated!</div>
+    }
+    @if(error()){
+    <div class="customer-banner customer-banner-error">Something went wrong</div>
+    }
+    <form class="customer-stack" (submit)="handleSubmit()">
+        <div class="customer-form-grid">
+            <div class="customer-field">
+                <label for="edit-customer-name">Name</label>
+                <input id="edit-customer-name" [value]="customers[0].name" (change)="changeName()" />
+            </div>
+            <div class="customer-field">
+                <label for="edit-customer-type">Type</label>
+                <select id="edit-customer-type" [value]="customers[0].type" (change)="changeType()">
+                    <option value="Person">Person</option>
+                    <option value="Company">Company</option>
+                </select>
+            </div>
+            <div class="customer-field customer-field-full">
+                <label for="edit-customer-address">Address</label>
+                <input id="edit-customer-address" [value]="customers[0].address" (change)="changeAddress()" />
+            </div>
+        </div>
+        <div class="customer-actions">
+            <button type="submit" disabled>Save Changes</button>
+            <app-button label="Back to Customer" [link]="'/home/customer-detail'" />
+        </div>
+    </form>
+</section>
+</div>
