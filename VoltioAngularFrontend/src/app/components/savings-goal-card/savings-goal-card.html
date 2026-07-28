@@ -1,0 +1,38 @@
+<div class="goal-card" [class.loading]="isLoading">
+  <div class="goal-card-details">
+    <div class="goal-card-header-row">
+      <h4>{{ goal.goalName }}</h4>
+      @if (goal.status) {
+        <span 
+          class="badge" 
+          [class.badge-success]="goal.status === SavingsGoalStatus.ACHIEVED"
+          [class.badge-warning]="goal.status === SavingsGoalStatus.EXPIRED">
+          {{ goal.status }}
+        </span>
+      }
+    </div>
+
+    <p class="muted">
+      Target: ${{ goal.targetAmount | number:'1.2-2' }} | Current: ${{ goal.currentBalance | number:'1.2-2' }}
+    </p>
+
+    <div class="progress-bar-container">
+      <div 
+        class="progress-bar-fill" 
+        [style.width.%]="goal.progressPercentage ?? 0">
+      </div>
+    </div>
+
+    <div class="goal-card-footer">
+      @if (goal.timeRemainingDays !== undefined && goal.timeRemainingDays !== null) {
+        <span class="field-hint">{{ goal.timeRemainingDays }} days remaining</span>
+      }
+      <span class="field-hint">Target Date: {{ goal.targetDate }}</span>
+    </div>
+  </div>
+
+  <div class="goal-card-actions">
+    <button type="button" class="secondary" [disabled]="isLoading" (click)="onEdit()">Edit</button>
+    <button type="button" class="btn-danger-link" [disabled]="isLoading" (click)="onDelete()">Delete</button>
+  </div>
+</div>

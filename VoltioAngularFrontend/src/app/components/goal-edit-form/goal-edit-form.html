@@ -1,0 +1,46 @@
+<div class="goal-edit-panel stack">
+  <div class="section-header">
+    <h3>Edit Savings Goal</h3>
+  </div>
+
+  <form class="stack" (submit)="onSubmit($event)">
+    <div class="field">
+      <label for="editGoalName">Goal Name</label>
+      <input 
+        id="editGoalName" 
+        name="goalName" 
+        type="text" 
+        [(ngModel)]="formData.goalName" 
+        required />
+    </div>
+
+    <div class="field">
+      <label for="editTargetAmount">Target Amount ($)</label>
+      <input 
+        id="editTargetAmount" 
+        name="targetAmount" 
+        type="number" 
+        min="1" 
+        step="0.01"
+        [(ngModel)]="formData.targetAmount" 
+        required />
+    </div>
+
+    <div class="field">
+      <label for="editTargetDate">Target Date</label>
+      <input 
+        id="editTargetDate" 
+        name="targetDate" 
+        type="date" 
+        [(ngModel)]="formData.targetDate" 
+        required />
+    </div>
+
+    <div class="actions space-between-actions">
+      <button type="button" class="secondary" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="isLoading">
+        {{ isLoading ? 'Updating...' : 'Save Changes' }}
+      </button>
+    </div>
+  </form>
+</div>

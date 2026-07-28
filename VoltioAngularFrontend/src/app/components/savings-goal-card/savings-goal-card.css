@@ -1,0 +1,130 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.goal-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  background-color: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  transition: all 0.2s ease-in-out;
+}
+
+.goal-card.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.goal-card-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.goal-card-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.goal-card-header-row h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color, #0f172a);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm, 4px);
+  background-color: var(--badge-bg, #f1f5f9);
+  color: var(--badge-text, #475569);
+  border: 1px solid var(--badge-border, #cbd5e1);
+}
+
+.badge-success {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.muted {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted, #64748b);
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: var(--border-color, #e2e8f0);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.25rem 0;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent-gradient, linear-gradient(90deg, #2563eb, #3b82f6));
+  border-radius: 999px;
+  transition: width 0.4s ease-out;
+}
+
+.goal-card-footer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Actions */
+.goal-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-danger-link {
+  background: none;
+  border: none;
+  color: var(--danger-color, #ef4444);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm, 4px);
+  transition: background-color 0.15s ease;
+}
+
+.btn-danger-link:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Neon Theme Adjustments */
+:host-context(.theme-neon) .goal-card,
+.theme-neon .goal-card {
+  background-color: rgba(15, 23, 42, 0.7);
+  border-color: rgba(56, 189, 248, 0.2);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.05);
+}
+
+:host-context(.theme-neon) .progress-bar-fill,
+.theme-neon .progress-bar-fill {
+  background: linear-gradient(90deg, #06b6d4, #3b82f6);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+}
