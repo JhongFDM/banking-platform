@@ -4,9 +4,10 @@ import { adminGuard } from './core/guards/admin-guard';
 import { defaultRouteGuard } from './core/guards/default-route-guard';
 
 export const routes: Routes = [
-    {path: '', redirectTo: 'home', pathMatch: 'full'},
-    {path: 'home', 
-        component: Home, 
+    { path: '', redirectTo: 'home', pathMatch: 'full' },
+    {
+        path: 'home',
+        component: Home,
         children: [
             { 
                 path: '', 
@@ -46,6 +47,18 @@ export const routes: Routes = [
                 path: 'customers', 
                 loadComponent: () => import('./components/pages/customers/customers').then(m => m.Customers),
                 canActivate: [adminGuard]
+            },
+            {
+                path: 'customer-detail', loadComponent: () => import('./pages/customer-detail/customer-detail').then(m => m.CustomerDetail)
+            },
+            {
+                path: 'customer-profile', loadComponent: () => import('./pages/customer-profile/customer-profile').then(m => m.CustomerProfile)
+            },
+            {
+                path: 'customer-edit', loadComponent: () => import('./pages/customer-edit/customer-edit').then(m => m.CustomerEdit)
+            },
+            {
+                path: 'customer-create', loadComponent: () => import('./pages/customer-create/customer-create').then(m => m.CustomerCreate)
             },
         ]
     },

@@ -1,0 +1,78 @@
+<div class="profile-page">
+
+    <!-- {/* Section 1: Identity & Type */} -->
+    <div class="profile-section">
+        <div class="profile-section-header">
+            <span class="profile-section-title">Identity &amp; Type</span>
+        </div>
+        <div class="panel stack">
+            <div class="profile-identity-card">
+                <div class="profile-avatar-circle">{{customers[0].name.charAt(0)}}</div>
+                <div>
+                    <p class="eyebrow">{{customers[0].type}} Account</p>
+                    <h2 class="profile-name">{{customers[0].name}}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- {/* Section 2: Contact Details (read-only) */} -->
+    <div class="profile-section">
+        <div class="profile-section-header">
+            <span class="profile-section-title">Contact Details</span>
+        </div>
+        <div class="panel stack">
+            <div class="field">
+                <label for="profile-name">Full Name</label>
+                <input id="profile-name" type="text" [value]="customers[0].name || ''" disabled readonly />
+            </div>
+            <div class="field">
+                <label for="profile-email">Email</label>
+                <input id="profile-email" type="email" [value]="customers[0].email || ''" disabled readonly />
+            </div>
+            @if(customers[0].type === 'Person'){
+            <div class="field">
+                <label for="profile-dob">Date of Birth</label>
+                <input id="profile-dob" type="date" [value]="customers[0].dob || ''" disabled readonly />
+            </div>
+            } @else {
+            <div class="field">
+                <label for="profile-gbn">Government Business Number</label>
+                <input id="profile-gbn" [value]="customers[0].type" disabled readonly />
+            </div>
+            }
+            <p class="field-hint">Contact support to update this information.</p>
+        </div>
+    </div>
+
+    <!-- {/* Section 3: Location */} -->
+    <div class="profile-section">
+        <div class="profile-section-header">
+            <span class="profile-section-title">Location</span>
+            @if(!isEditing()){
+            <button type="button" class="secondary profile-edit-btn" (click)="startEdit()">
+                Edit
+            </button>
+            } @else {
+            <div class="actions">
+                <button type="button" (click)="submitEdit()">
+                    Update
+                </button>
+                <button type="button" class="secondary" (click)="cancelEdit()">
+                    Cancel
+                </button>
+            </div>
+            }
+        </div>
+        <div class="panel stack">
+            <!-- This portion was used to display success message upon changing client information and will have to be copmleted when backend is connected. -->
+            <!-- {addressSuccess && !isEditingAddress && (
+            <div class="banner success">Address updated.</div>
+            )} -->
+            <div class="field">
+                <label for="profile-address">Address</label>
+                <input id="profile-address" placeholder="Enter your location here..." [value]="customers[0].address" [disabled]="!isEditing()"/>
+            </div>
+        </div>
+    </div>
+</div>
