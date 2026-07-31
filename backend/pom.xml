@@ -116,6 +116,15 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Postgres + pgvector, used exclusively by the Savings Insight
+             Chatbot's knowledge-embedding store (service/chat/vectorstore).
+             Version managed by the Spring Boot BOM, not pinned here. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

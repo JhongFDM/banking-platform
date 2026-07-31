@@ -28,6 +28,7 @@ import { TransferPage } from './pages/TransferPage';
 import { WithdrawPage } from './pages/WithdrawPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { useTheme } from './theme/ThemeContext';
+import ChatWidget from './components/chat/ChatWidget';
 
 import voltioIcon from './images/Voltio_icon.png';
 import voltioIconGreen from './images/Voltio_icon_green.png';
@@ -361,6 +362,8 @@ function AppLayout() {
       <main className="content-area">
         <Outlet />
       </main>
+
+      {isAuthenticated && !isAdminUser && <ChatWidget accountId={activeAccountId} />}
     </div>
   );
 }
