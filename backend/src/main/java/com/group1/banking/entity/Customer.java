@@ -8,8 +8,6 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -36,7 +34,6 @@ public class Customer {
     @Column(nullable = false)
     private CustomerType type;
 
-
     @Column(name = "date_of_birth", nullable = false)
     private java.time.LocalDate dateOfBirth;
 
@@ -45,6 +42,9 @@ public class Customer {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private List<Account> accounts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RiskScore> riskScoreHistory;
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
@@ -70,38 +70,80 @@ public class Customer {
     public Long getCustomerId() {
         return customerId;
     }
-    public void setCustomerId(Long customerId) { this.customerId = customerId; }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setCustomerId(Long customerId) {
+        this.customerId = customerId;
+    }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public String getName() {
+        return name;
+    }
 
-    public CustomerType getType() { return type; }
-    public void setType(CustomerType type) { this.type = type; }
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public CustomerType getType() {
+        return type;
+    }
+
+    public void setType(CustomerType type) {
+        this.type = type;
+    }
 
     public java.time.LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
-    public void setDateOfBirth(java.time.LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+
+    public void setDateOfBirth(java.time.LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
 
     public boolean isKycVerified() {
         return kycVerified;
     }
-    public void setKycVerified(boolean kycVerified) { this.kycVerified = kycVerified; }
+
+    public void setKycVerified(boolean kycVerified) {
+        this.kycVerified = kycVerified;
+    }
 
     public List<Account> getAccounts() {
         return accounts;
     }
-    public void setAccounts(List<Account> accounts) { this.accounts = accounts; }
 
-    public Instant getDeletedAt() { return deletedAt; }
-    public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
+    public void setAccounts(List<Account> accounts) {
+        this.accounts = accounts;
+    }
 
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
 
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }
