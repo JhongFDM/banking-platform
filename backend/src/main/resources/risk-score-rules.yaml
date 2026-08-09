@@ -3,7 +3,7 @@ risk-score:
   insufficientConditions:
     minMonths: 3
   factors:
-    spendingIncomeRatio:
+    SPENDING_INCOME_RATIO:
       weight: 0.5
       bands:
         - { max: 0.5, score: 10, meaning: healthy }
@@ -12,7 +12,7 @@ risk-score:
         - { max: 1.0, score: 60, meaning: danger }
         - { max: 9999, score: 100, meaning: spending more than earning }
     # months of spend convered
-    savingsBalanceCover:
+    SAVING_BALANCE:
       weight: 0.35
       bands:
         - { max: 0.25, score: 100, meaning: no buffer }
@@ -21,7 +21,7 @@ risk-score:
         - { max: 6, score: 20, meaning: adequate }
         - { max: 9999, score: 10, meaning: strong }
     # Saving goals:
-    savingGoals:
+    GOAL_PROGRESS:
       weight: 0.15
       bands:
         - { max: 10, score: 100, meaning: barely started }

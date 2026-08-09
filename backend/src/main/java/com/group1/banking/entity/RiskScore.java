@@ -35,6 +35,9 @@ public class RiskScore {
     @Column(name = "id")
     private Long id;
 
+    @Column(name = "rule_version")
+    private Double version;
+
     @Column(name = "score")
     private Double score;
 

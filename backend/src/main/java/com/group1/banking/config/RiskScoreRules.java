@@ -8,6 +8,8 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import com.group1.banking.enums.RiskScoreDataElement;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -18,7 +20,7 @@ import lombok.NoArgsConstructor;
 public class RiskScoreRules {
     private double version;
     private InSufficientConditionConfig insufficientConditions;
-    private Map<String, FactorConfig> factors = new HashMap<>();
+    private Map<RiskScoreDataElement, FactorConfig> factors = new HashMap<>();
 
     @Data
     public static class InSufficientConditionConfig {

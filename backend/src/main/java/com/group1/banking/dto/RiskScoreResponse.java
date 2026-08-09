@@ -16,8 +16,8 @@ import lombok.NoArgsConstructor;
 public class RiskScoreResponse {
     private Long customerId;
     private Double score;
-    private RiskScoreBand band;
-    private RiskScoreStatus status;
+    private RiskScoreBand band; // enum: low, medium, high
+    private RiskScoreStatus status; // enum: ok, insufficient_data
     private List<RiskScoreFactor> factors;
     private Instant calculatedAt;
 

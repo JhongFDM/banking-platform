@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RiskScoreFactor {
-    private RiskScoreDataElement dataElement;
+    private RiskScoreDataElement dataElement; // enum: spending/income ratio, saving balance, saving goals
     private Double subscore;
     private Double weight;
     private Double contribution;
