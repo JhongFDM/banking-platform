@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import com.group1.banking.enums.RiskScoreDataElement;
+import com.group1.banking.enums.RiskScoreLevel;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,10 +22,19 @@ public class RiskScoreRules {
     private double version;
     private InSufficientConditionConfig insufficientConditions;
     private Map<RiskScoreDataElement, FactorConfig> factors = new HashMap<>();
+    private List<RiskScoreBand> riskScoreBands;
 
     @Data
     public static class InSufficientConditionConfig {
         private int minMonths;
+    }
+
+    @Data
+    public static class RiskScoreBand {
+        private int max;
+        private RiskScoreLevel level;
+        private String explain;
+
     }
 
     @Data

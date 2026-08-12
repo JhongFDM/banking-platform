@@ -1,8 +1,9 @@
 package com.group1.banking.enums;
 
-public enum RiskScoreBand {
+public enum RiskScoreLevel {
     LOW,
-    MEDIUM,
+    MODERATE,
+    ELEVATED,
     HIGH,
     // omit when INSUFFCIENT_DATA for RiskScoreStatus
 }

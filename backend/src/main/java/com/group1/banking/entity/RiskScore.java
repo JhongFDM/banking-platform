@@ -2,7 +2,7 @@ package com.group1.banking.entity;
 
 import java.time.Instant;
 
-import com.group1.banking.enums.RiskScoreBand;
+import com.group1.banking.enums.RiskScoreLevel;
 import com.group1.banking.enums.RiskScoreStatus;
 
 import jakarta.persistence.Column;
@@ -43,7 +43,7 @@ public class RiskScore {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "band")
-    private RiskScoreBand band;
+    private RiskScoreLevel band;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

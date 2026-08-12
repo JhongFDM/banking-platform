@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RiskScoreFactor {
     private RiskScoreDataElement dataElement; // enum: spending/income ratio, saving balance, saving goals
-    private Double subscore;
     private Double weight;
+    private Integer subscore;
     private Double contribution;
+    private String explanation;
+    private boolean isValid;
 }

@@ -5,27 +5,35 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.reactive.TransactionCallback;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group1.banking.config.RiskScoreRules;
+import com.group1.banking.config.RiskScoreRules.Band;
+import com.group1.banking.config.RiskScoreRules.FactorConfig;
+import com.group1.banking.config.RiskScoreRules.RiskScoreBand;
+import com.group1.banking.dto.RiskScoreFactor;
 import com.group1.banking.dto.RiskScoreResponse;
 import com.group1.banking.dto.SavingsGoalResponse;
 import com.group1.banking.entity.Account;
 import com.group1.banking.entity.AccountStatus;
 import com.group1.banking.entity.Customer;
-import com.group1.banking.entity.SavingsGoal;
+import com.group1.banking.entity.RiskScore;
 import com.group1.banking.entity.Transaction;
 import com.group1.banking.entity.TransactionDirection;
 import com.group1.banking.entity.TransactionStatus;
+import com.group1.banking.enums.RiskScoreDataElement;
+import com.group1.banking.enums.RiskScoreStatus;
 import com.group1.banking.exception.NotFoundException;
 import com.group1.banking.repository.AccountRepository;
 import com.group1.banking.repository.CustomerRepository;
 import com.group1.banking.repository.RiskScoreRepository;
-import com.group1.banking.repository.SavingsGoalRepository;
 import com.group1.banking.repository.TransactionRepository;
 import com.group1.banking.security.CustomUserPrincipal;
 import com.group1.banking.service.SavingsGoalService;
@@ -41,6 +49,9 @@ public class RiskScoreService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final SavingsGoalService savingsGoalService;
+    private final ObjectMapper objectMapper;
+
+    private final RiskScoreRules riskScoreRules;
 
     private final long LOOK_BACK_MONTH = 3;
     private final double MAX_RATIO = 999.0;
@@ -49,12 +60,14 @@ public class RiskScoreService {
 
     public RiskScoreService(RiskScoreRepository riskScoreRepository, CustomerRepository customerRepository,
             AccountRepository accountRepository, TransactionRepository transactionRepository,
-            SavingsGoalService savingsGoalService) {
+            SavingsGoalService savingsGoalService, RiskScoreRules riskScoreRules, ObjectMapper objectMapper) {
         this.riskScoreRepository = riskScoreRepository;
         this.customerRepository = customerRepository;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.savingsGoalService = savingsGoalService;
+        this.riskScoreRules = riskScoreRules;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -71,12 +84,68 @@ public class RiskScoreService {
         // get all SUCCESSFUL transcation in the LOOK_BACK_MONTH
         List<Transaction> transactions = getAllTranscations(customer_id);
 
-        // calculat all factors
+        // get all factors
         Double ratio = calculateSpendingIncomeRatio(transactions);
         Double monthsCoverage = calculateMonthsCoverage(accounts, transactions);
         Double savingProgress = calculateMeanSavingProgress(customer_id);
 
-        return null;
+        // calculate risk score
+        boolean haveGoals = savingProgress != null;
+        List<RiskScoreFactor> riskScoreFactors = new ArrayList<>();
+        RiskScoreFactor factorForRatio = generateRiskScoreForFactor(RiskScoreDataElement.SPENDING_INCOME_RATIO,
+                haveGoals, ratio);
+        RiskScoreFactor factorForBalance = generateRiskScoreForFactor(RiskScoreDataElement.SAVING_BALANCE,
+                haveGoals, monthsCoverage);
+        RiskScoreFactor factorForGoal = generateRiskScoreForFactor(RiskScoreDataElement.GOAL_PROGRESS,
+                haveGoals, savingProgress);
+
+        riskScoreFactors.add(factorForRatio);
+        riskScoreFactors.add(factorForBalance);
+        riskScoreFactors.add(factorForGoal);
+
+        // calculate total score
+        Double riskScore = riskScoreFactors.stream().map(RiskScoreFactor::getContribution).reduce(0.0, Double::sum);
+
+        // get correct band;
+        List<RiskScoreBand> scoreBands = riskScoreRules.getRiskScoreBands();
+        RiskScoreBand correctRiskScoreBand = null;
+        for (RiskScoreBand b : scoreBands) {
+            if (riskScore <= b.getMax()) {
+                correctRiskScoreBand = b;
+                break;
+            }
+        }
+
+        // if risk score didn't fall into any band, it means it is over the largest band
+        if (correctRiskScoreBand == null) {
+            correctRiskScoreBand = scoreBands.get(scoreBands.size() - 1);
+        }
+
+        // save risk score
+        RiskScore riskScoreEntity = new RiskScore();
+        riskScoreEntity.setVersion(riskScoreRules.getVersion());
+        riskScoreEntity.setScore(riskScore);
+        riskScoreEntity.setBand(correctRiskScoreBand.getLevel());
+        riskScoreEntity.setStatus(RiskScoreStatus.OK);
+        try {
+            riskScoreEntity.setFactors(objectMapper.writeValueAsString(riskScoreFactors));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize risk score factor", e);
+        }
+        riskScoreEntity.setCustomer(customer);
+        riskScoreRepository.save(riskScoreEntity);
+
+        // return riskScoreResponse
+        RiskScoreResponse riskScoreResponse = new RiskScoreResponse();
+        riskScoreResponse.setCustomerId(customer_id);
+        riskScoreResponse.setScore(riskScore);
+        riskScoreResponse.setLevel(correctRiskScoreBand.getLevel());
+        riskScoreResponse.setExplain(correctRiskScoreBand.getExplain());
+        riskScoreResponse.setStatus(RiskScoreStatus.OK);
+        riskScoreResponse.setFactors(riskScoreFactors);
+        riskScoreResponse.setCalculatedAt(riskScoreEntity.getCalculatedAt());
+
+        return riskScoreResponse;
 
     }
 
@@ -150,6 +219,61 @@ public class RiskScoreService {
         log.debug("saving goal mean progress = {}", weightedMean);
 
         return weightedMean;
+    }
+
+    private RiskScoreFactor generateRiskScoreForFactor(RiskScoreDataElement element, boolean haveGoals, Double data) {
+
+        RiskScoreFactor factor = new RiskScoreFactor();
+        factor.setDataElement(element);
+
+        // When saving goal is missing
+        if (data == null) {
+            factor.setValid(false);
+            factor.setWeight(0.0);
+            factor.setContribution(0.0);
+            return factor;
+        }
+
+        Map<RiskScoreDataElement, FactorConfig> rules = riskScoreRules.getFactors();
+        // get bands and weight for the factor
+        List<Band> bands = rules.get(element).getBands();
+        Double weight = rules.get(element).getWeight();
+
+        // weight normalization if saving goal is missing
+        if (!haveGoals) {
+            if (element == RiskScoreDataElement.GOAL_PROGRESS) {
+                weight = 0.0;
+            } else if (element == RiskScoreDataElement.SPENDING_INCOME_RATIO) {
+                weight = weight / (weight + rules.get(RiskScoreDataElement.SAVING_BALANCE).getWeight());
+            } else if (element == RiskScoreDataElement.SAVING_BALANCE) {
+                weight = weight / (weight + rules.get(RiskScoreDataElement.SPENDING_INCOME_RATIO).getWeight());
+            }
+        }
+
+        Band correctBand = null;
+        for (Band b : bands) {
+            if (data <= b.getMax()) {
+                correctBand = b;
+                break;
+            }
+        }
+
+        // If data doesn't fall into any band; (rare, probably won't
+        // happen)
+        if (correctBand == null) {
+            factor.setValid(false);
+            factor.setWeight(0.0);
+            factor.setContribution(0.0);
+            return factor;
+        }
+
+        Double contribution = weight * correctBand.getScore();
+        factor.setWeight(weight);
+        factor.setSubscore(correctBand.getScore());
+        factor.setContribution(contribution);
+        factor.setExplanation(correctBand.getMeaning());
+        factor.setValid(true);
+        return factor;
     }
 
     private BigDecimal getTotalSpending(List<Transaction> transcations) {

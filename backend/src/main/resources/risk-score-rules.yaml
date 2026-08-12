@@ -2,6 +2,12 @@ risk-score:
   version: 1.0
   insufficientConditions:
     minMonths: 3
+  riskScoreBands:
+    - { max: 25, level: LOW, explain: "healthy financial position" }
+    - { max: 45, level: MODERATE, explain: "generally stable with minor concerns" }
+    - { max: 70, level: ELEVATED, explain: "financial strain, needs attention" }
+    - { max: 100, level: HIGH, explain: "high risk, immediate action recommended" }
+
   factors:
     SPENDING_INCOME_RATIO:
       weight: 0.5
