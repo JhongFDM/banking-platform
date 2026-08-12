@@ -147,6 +147,73 @@ GOAL_STATUS_MIX = [
     ("NOT_STARTED", 0.08),   # balance = 0, deadline ahead
 ]
 
+# ---------------------------------------------------------------------------
+# Risk profiles
+#
+# RiskScoreService scores a customer on three factors, each banded in
+# risk-score-rules.yaml and combined with weights 0.5 / 0.35 / 0.15:
+#
+#   SPENDING_INCOME_RATIO  total DEBIT / total CREDIT over the last 3 months
+#   SAVING_BALANCE         total balance / average monthly spend ("months of
+#                          coverage")
+#   GOAL_PROGRESS          target-weighted mean of goal completion percent
+#
+# Without profiles every generated customer looks the same: rent is a modest
+# slice of salary and the balance floor caps everyday spending, so the ratio
+# always lands under 0.5 and coverage runs into the tens of months - every
+# customer scores LOW. These profiles spread customers across all four bands
+# so each one is reachable in local testing.
+#
+# The balance floor still holds: "strained" customers drain their balance
+# toward zero across the window rather than below it, which is what produces
+# both a high ratio and thin coverage.
+#
+#   rent_frac        rent as a share of monthly income
+#   spend_frac       everyday card spend as a share of income, per month
+#   open_mult        opening balance multiplier (thin balance => low coverage)
+#   contrib_rate     chance a savings account gets its monthly contribution
+#   goal_progress    (lo, hi) fraction of target already saved
+#   share            portion of the customer base with this profile
+# ---------------------------------------------------------------------------
+RISK_PROFILES = [
+    {
+        "name": "healthy",           # -> LOW
+        "rent_frac": (0.20, 0.28),
+        "spend_frac": (0.10, 0.18),
+        "open_mult": (1.00, 1.00),
+        "contrib_rate": 0.90,
+        "goal_progress": (0.80, 0.99),
+        "share": 0.45,
+    },
+    {
+        "name": "comfortable",       # -> MODERATE
+        "rent_frac": (0.32, 0.40),
+        "spend_frac": (0.28, 0.36),
+        "open_mult": (0.22, 0.34),
+        "contrib_rate": 0.30,
+        "goal_progress": (0.35, 0.58),
+        "share": 0.30,
+    },
+    {
+        "name": "stretched",         # -> ELEVATED
+        "rent_frac": (0.40, 0.48),
+        "spend_frac": (0.44, 0.52),
+        "open_mult": (0.08, 0.16),
+        "contrib_rate": 0.10,
+        "goal_progress": (0.12, 0.30),
+        "share": 0.17,
+    },
+    {
+        "name": "strained",          # -> HIGH
+        "rent_frac": (0.42, 0.50),
+        "spend_frac": (0.54, 0.66),
+        "open_mult": (0.05, 0.10),
+        "contrib_rate": 0.0,
+        "goal_progress": (0.02, 0.09),
+        "share": 0.08,
+    },
+]
+
 
 def sql_str(value):
     """Quote a Python value as a SQL string literal, or NULL."""
@@ -189,6 +256,17 @@ def pick_status(rng):
     return GOAL_STATUS_MIX[-1][0]
 
 
+def pick_risk_profile(rng):
+    """Draw a risk profile from RISK_PROFILES by its share."""
+    roll = rng.random()
+    cumulative = 0.0
+    for profile in RISK_PROFILES:
+        cumulative += profile["share"]
+        if roll < cumulative:
+            return profile
+    return RISK_PROFILES[-1]
+
+
 def build_goals(rng, accounts, today):
     """Create savings goals on non-CHECKING ACTIVE accounts.
 
@@ -224,16 +302,28 @@ def build_goals(rng, accounts, today):
             # back to IN_PROGRESS rather than emit a self-inconsistent row.
             wanted = "IN_PROGRESS"
 
+        # SavingsGoalService computes progress as balance / target * 100, so
+        # inverting the profile's intended progress gives the target that
+        # reads back at that percentage. GOAL_PROGRESS is scored on this.
+        progress_lo, progress_hi = acct.get("goal_progress", (0.35, 0.95))
+        progress = rng.uniform(progress_lo, progress_hi)
+
+        # A profile that saves little cannot also have met its goal, so
+        # redirect ACHIEVED to the profile's own progress range instead of
+        # overriding it back to full.
+        if wanted == "ACHIEVED" and progress_hi < 0.75:
+            wanted = "OVERDUE" if rng.random() < 0.5 else "IN_PROGRESS"
+
         if wanted == "ACHIEVED":
             # target at or below balance
             target = money(balance * rng.uniform(0.55, 0.98))
             target_date = today + timedelta(days=rng.randint(-240, 400))
         elif wanted == "OVERDUE":
             # deadline in the past, target still above balance
-            target = money(balance * rng.uniform(1.15, 2.6))
+            target = money(balance / min(progress, 0.95))
             target_date = today - timedelta(days=rng.randint(5, 300))
         else:  # IN_PROGRESS
-            target = money(balance * rng.uniform(1.10, 3.2))
+            target = money(balance / min(progress, 0.95))
             target_date = today + timedelta(days=rng.randint(20, 730))
 
         # Guard against a degenerate target of zero (target_amount must be > 0)
@@ -307,18 +397,28 @@ def build(rng, num_customers, months, today):
             else money(rng.uniform(14000, 52000))
         employer = rng.choice(EMPLOYERS)
 
+        # Risk profile fixes this customer's spending and saving behaviour so
+        # the seeded population covers every RiskScoreService band.
+        profile = pick_risk_profile(rng)
+        rent_frac = rng.uniform(*profile["rent_frac"])
+        spend_frac = rng.uniform(*profile["spend_frac"])
+        open_mult = rng.uniform(*profile["open_mult"])
+        customers[-1]["profile"] = profile["name"]
+
         for idx, acct_type in enumerate(cust_account_types):
             account_id = next_account_id
             next_account_id += 1
             is_primary = (idx == 0)
 
-            # Opening balance before any seeded transaction
+            # Opening balance before any seeded transaction. open_mult thins
+            # the balance for higher-risk profiles, which is what drives their
+            # months-of-coverage down.
             if acct_type == "CHECKING":
-                balance = money(rng.uniform(400, 5200))
+                balance = money(rng.uniform(400, 5200) * open_mult)
             elif acct_type == "SAVINGS":
-                balance = money(rng.uniform(1500, 48000))
+                balance = money(rng.uniform(1500, 48000) * open_mult)
             else:                                   # TFSA / RRSP
-                balance = money(rng.uniform(0, 32000))
+                balance = money(rng.uniform(0, 32000) * open_mult)
 
             # A small number of non-primary accounts are FROZEN or CLOSED
             roll = rng.random()
@@ -344,6 +444,7 @@ def build(rng, num_customers, months, today):
                 "limit": money(rng.choice([1000, 3000, 3000, 5000, 10000])),
                 "created": created,
                 "opening": balance,
+                "goal_progress": profile["goal_progress"],
             }
 
             # Closed/frozen accounts get no seeded activity
@@ -378,7 +479,7 @@ def build(rng, num_customers, months, today):
                     })
 
                     # Rent / mortgage - one fixed large debit
-                    rent = money(monthly_income * rng.uniform(0.22, 0.38))
+                    rent = money(monthly_income * rent_frac)
                     if balance - rent > 0:
                         rent_dt = datetime.combine(
                             m_start + timedelta(days=rng.choice([0, 1, 2])),
@@ -397,10 +498,22 @@ def build(rng, num_customers, months, today):
                             "category": CAT_HOUSING,
                         })
 
-                    # Everyday card spending
-                    for _ in range(rng.randint(12, 26)):
+                    # Everyday card spending. The profile sets a monthly
+                    # budget as a share of income; each purchase keeps its
+                    # merchant-realistic shape but is scaled so the month's
+                    # total lands on that budget. This is what moves the
+                    # spending/income ratio between profiles.
+                    txn_count = rng.randint(12, 26)
+                    budget = monthly_income * spend_frac
+                    raw = [rng.uniform(lo, hi) for lo, hi in
+                           [(m[2], m[3]) for m in
+                            [rng.choice(MERCHANTS) for _ in range(txn_count)]]]
+                    scale = budget / sum(raw) if sum(raw) > 0 else 0.0
+                    for raw_amt in raw:
                         merchant, cat, lo, hi = rng.choice(MERCHANTS)
-                        amt = money(rng.uniform(lo, hi))
+                        amt = money(raw_amt * scale)
+                        if amt <= 0:
+                            continue
                         if balance - amt <= 0:
                             continue        # never let the balance go negative
                         day = m_start + timedelta(days=rng.randint(0, 27))
@@ -423,8 +536,9 @@ def build(rng, num_customers, months, today):
                         })
                 else:
                     # Savings / TFSA / RRSP - a monthly contribution, and
-                    # occasionally a withdrawal
-                    if rng.random() < 0.85:
+                    # occasionally a withdrawal. Higher-risk profiles
+                    # contribute rarely or never, so their balance stays thin.
+                    if rng.random() < profile["contrib_rate"]:
                         amt = money(rng.uniform(100, 1200))
                         day = m_start + timedelta(days=rng.randint(1, 26))
                         when = datetime.combine(day, datetime.min.time()) \
@@ -494,6 +608,13 @@ def write_seed(path, customers, accounts, transactions, goals, args):
     w("-- Balances are computed by replaying the transactions below, so each")
     w("-- ACCOUNT.BALANCE equals its opening balance plus credits minus")
     w("-- debits. No account is ever driven negative.")
+    w("--")
+    w("-- Each customer is generated from a risk profile so RiskScoreService")
+    w("-- has data in every band. Customer IDs by profile:")
+    for prof in RISK_PROFILES:
+        ids = [str(c["id"]) for c in customers
+               if c.get("profile") == prof["name"]]
+        w("--   %-12s (%2d): %s" % (prof["name"], len(ids), ", ".join(ids)))
     w("--")
     w("-- Run unseed_demo_data.sql to remove every row inserted here.")
     w("-- ---------------------------------------------------------------")
