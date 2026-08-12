@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group1.banking.dto.RiskScoreResponse;
 import com.group1.banking.security.CustomUserPrincipal;
-import com.group1.banking.service.RiskScoreService;
+import com.group1.banking.service.impl.RiskScoreService;
 
 @RestController
 @RequestMapping("/api/risk_score")
@@ -25,7 +25,8 @@ public class RiskScoreController {
     // admin-only
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("customers/{id}")
-    public ResponseEntity<RiskScoreResponse> calculateRiskScore(@PathVariable Long id) {
+    public ResponseEntity<RiskScoreResponse> calculateRiskScore(@PathVariable Long id,
+            @AuthenticationPrincipal CustomUserPrincipal principal) {
         RiskScoreResponse riskScoreResponse = this.riskScoreService.calculateRiskScore(id);
 
         return ResponseEntity.ok(riskScoreResponse);
