@@ -3,7 +3,6 @@ package com.group1.banking.dto;
 import java.time.Instant;
 import java.util.List;
 
-import com.group1.banking.config.RiskScoreRules.RiskScoreBand;
 import com.group1.banking.enums.RiskScoreLevel;
 import com.group1.banking.enums.RiskScoreStatus;
 
