@@ -199,6 +199,7 @@ public class RiskScoreService {
 
     private Double calculateMeanSavingProgress(Long customer_id) {
         List<SavingsGoalResponse> allSavingGoalProgresses = this.savingsGoalService.getAllGoalsForCustomer(customer_id);
+
         Double weightedMean;
         BigDecimal weightedSum = BigDecimal.ZERO;
         BigDecimal weightSum = BigDecimal.ZERO;
