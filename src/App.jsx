@@ -3,6 +3,7 @@ import { NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate } fr
 import { useAuth } from './auth/AuthContext';
 import { AdminRoute } from './auth/AdminRoute';
 import { ProtectedRoute } from './auth/ProtectedRoute';
+import { ChatWidget } from './components/ChatWidget';
 import { FeatureGuard } from './components/FeatureGuard';
 import { useListCustomerAccounts } from './hooks/useListCustomerAccounts';
 import { AccountDetailPage } from './pages/AccountDetailPage';
@@ -361,6 +362,8 @@ function AppLayout() {
       <main className="content-area">
         <Outlet />
       </main>
+
+      {isAuthenticated && !isAdmin && customerId && <ChatWidget />}
     </div>
   );
 }
