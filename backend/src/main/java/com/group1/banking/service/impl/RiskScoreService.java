@@ -12,8 +12,8 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import com.group1.banking.config.RiskScoreRules;
 import com.group1.banking.config.RiskScoreRules.Band;
 import com.group1.banking.config.RiskScoreRules.FactorConfig;
@@ -49,7 +49,7 @@ public class RiskScoreService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final SavingsGoalService savingsGoalService;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
 
     private final RiskScoreRules riskScoreRules;
 
@@ -60,7 +60,7 @@ public class RiskScoreService {
 
     public RiskScoreService(RiskScoreRepository riskScoreRepository, CustomerRepository customerRepository,
             AccountRepository accountRepository, TransactionRepository transactionRepository,
-            SavingsGoalService savingsGoalService, RiskScoreRules riskScoreRules, ObjectMapper objectMapper) {
+            SavingsGoalService savingsGoalService, RiskScoreRules riskScoreRules, JsonMapper objectMapper) {
         this.riskScoreRepository = riskScoreRepository;
         this.customerRepository = customerRepository;
         this.accountRepository = accountRepository;
@@ -129,7 +129,7 @@ public class RiskScoreService {
         riskScoreEntity.setStatus(RiskScoreStatus.OK);
         try {
             riskScoreEntity.setFactors(objectMapper.writeValueAsString(riskScoreFactors));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to serialize risk score factor", e);
         }
         riskScoreEntity.setCustomer(customer);

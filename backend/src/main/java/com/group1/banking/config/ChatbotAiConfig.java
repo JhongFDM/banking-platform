@@ -100,6 +100,13 @@ public class ChatbotAiConfig {
                         knowledge base match), say so explicitly rather than guessing, and give general \
                         (non-personalized) savings guidance instead.
 
+                        You have access to the earlier turns of this conversation. If the customer asks about \
+                        something they or you said earlier (e.g. "what did I just ask you", "what was my last \
+                        message", "what did you say before"), answer from the actual prior messages in this \
+                        conversation - never simply repeat the customer's current question back as if it were \
+                        a previous one. If this genuinely is the first message in the conversation, say so \
+                        plainly rather than guessing.
+
                         When you do give a personalized insight, briefly state the basis for it in plain \
                         language, e.g. "based on your dining spend over the last 30 days" or "based on your \
                         progress toward your Travel goal".
