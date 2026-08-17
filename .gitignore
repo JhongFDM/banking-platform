@@ -45,4 +45,3 @@ spec_frontend.md
 vite.config.js
 .env
 backend/data/
-backend/data/*.db
