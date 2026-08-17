@@ -29,6 +29,7 @@ import com.group1.banking.entity.Transaction;
 import com.group1.banking.entity.TransactionDirection;
 import com.group1.banking.entity.TransactionStatus;
 import com.group1.banking.enums.RiskScoreDataElement;
+import com.group1.banking.enums.RiskScoreLevel;
 import com.group1.banking.enums.RiskScoreStatus;
 import com.group1.banking.exception.NotFoundException;
 import com.group1.banking.repository.AccountRepository;
@@ -121,6 +122,13 @@ public class RiskScoreService {
             correctRiskScoreBand = scoreBands.get(scoreBands.size() - 1);
         }
 
+        // A frozen account forces the band to HIGH regardless of other factors
+        if (hasFrozenAccount(customer_id)) {
+            correctRiskScoreBand = getHighBand();
+            riskScoreFactors.add(buildFrozenOverrideFactor());
+            log.debug("frozen account override applied for customer {}", customer_id);
+        }
+
         // save risk score
         RiskScore riskScoreEntity = new RiskScore();
         riskScoreEntity.setVersion(riskScoreRules.getVersion());
@@ -151,6 +159,39 @@ public class RiskScoreService {
 
     public RiskScoreResponse getRiskScoreById(Long customer_id, CustomUserPrincipal principal) {
         return null;
+    }
+
+    private boolean hasFrozenAccount(Long customer_id) {
+        return this.accountRepository
+                .existsByCustomerCustomerIdAndDeletedAtIsNullAndStatus(customer_id, AccountStatus.FROZEN);
+    }
+
+    /**
+     * The HIGH band as configured in risk-score-rules.yaml. Resolved by level
+     * rather than by position so reordering the bands cannot silently change
+     * which band the override lands on.
+     */
+    private RiskScoreBand getHighBand() {
+        return riskScoreRules.getRiskScoreBands().stream()
+                .filter(b -> RiskScoreLevel.HIGH == b.getLevel())
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No HIGH band configured in risk score rules; cannot apply frozen account override"));
+    }
+
+    /**
+     * Records the override as a triggered factor so it is visible in the response
+     * and in the persisted factors JSON. Contribution is zero: the override
+     * changes the band, not the weighted-sum score.
+     */
+    private RiskScoreFactor buildFrozenOverrideFactor() {
+        RiskScoreFactor factor = new RiskScoreFactor();
+        factor.setDataElement(RiskScoreDataElement.FROZEN_ACCOUNT_OVERRIDE);
+        factor.setWeight(0.0);
+        factor.setContribution(0.0);
+        factor.setExplanation("Account frozen; risk band forced to HIGH");
+        factor.setValid(true);
+        return factor;
     }
 
     private Double calculateSpendingIncomeRatio(List<Transaction> transcations) {
