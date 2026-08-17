@@ -5,18 +5,24 @@ import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Second, standalone datasource used only by the Savings Insight Chatbot feature:
+ * Second, standalone datasource used only by the Savings Insight Chatbot
+ * feature:
  * the pgvector-backed knowledge base and the chat interaction log.
  *
- * The app's primary {@code spring.datasource.*} properties remain H2/MySQL for all
+ * The app's primary {@code spring.datasource.*} properties remain H2/MySQL for
+ * all
  * core banking data (customers, accounts, transactions, savings goals). This
- * datasource is deliberately NOT the Spring Boot-managed primary DataSource, so it
- * must be built and wired manually rather than relying on datasource auto-configuration.
+ * datasource is deliberately NOT the Spring Boot-managed primary DataSource, so
+ * it
+ * must be built and wired manually rather than relying on datasource
+ * auto-configuration.
  */
 @Configuration
 public class ChatbotDataSourceConfig {
@@ -43,19 +49,55 @@ public class ChatbotDataSourceConfig {
         return new JdbcTemplate(dataSource);
     }
 
+    @Bean
+    @Primary
+    @ConfigurationProperties(prefix = "spring.datasource")
+    public DataSourceProperties dataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean
+    @Primary
+    public DataSource dataSource(DataSourceProperties props) {
+        return props.initializeDataSourceBuilder().build();
+    }
+
     public static class ChatbotDataSourceProperties {
         private String url;
         private String username;
         private String password;
         private String driverClassName = "org.postgresql.Driver";
 
-        public String getUrl() { return url; }
-        public void setUrl(String url) { this.url = url; }
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
-        public String getDriverClassName() { return driverClassName; }
-        public void setDriverClassName(String driverClassName) { this.driverClassName = driverClassName; }
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getDriverClassName() {
+            return driverClassName;
+        }
+
+        public void setDriverClassName(String driverClassName) {
+            this.driverClassName = driverClassName;
+        }
     }
 }
