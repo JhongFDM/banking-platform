@@ -85,6 +85,14 @@ public class RiskScoreService {
         // get all SUCCESSFUL transcation in the LOOK_BACK_MONTH
         List<Transaction> transactions = getAllTranscations(customer_id);
 
+        // Without a long enough transaction history the factor calculations fall
+        // back to their neutral defaults (zero ratio, max coverage), which would
+        // score a brand new customer as LOW. Report the shortfall instead of
+        // inventing a score.
+        if (!hasEnoughHistory(customer_id)) {
+            return buildInsufficientDataResponse(customer_id);
+        }
+
         // get all factors
         Double ratio = calculateSpendingIncomeRatio(transactions);
         Double monthsCoverage = calculateMonthsCoverage(accounts, transactions);
@@ -159,6 +167,43 @@ public class RiskScoreService {
 
     public RiskScoreResponse getRiskScoreById(Long customer_id, CustomUserPrincipal principal) {
         return null;
+    }
+
+    /**
+     * A score is only meaningful once the customer's transaction history spans at
+     * least the configured minimum. Measured from the earliest transaction on
+     * record rather than from the look-back window, so a customer who simply had
+     * a quiet recent quarter is not mistaken for a new one.
+     */
+    private boolean hasEnoughHistory(Long customer_id) {
+        Instant earliest = this.transactionRepository.findEarliestTimestampForCustomer(customer_id);
+        if (earliest == null) {
+            return false;
+        }
+
+        int minMonths = riskScoreRules.getInsufficientConditions().getMinMonths();
+        Instant threshold = LocalDate.now(ZoneOffset.UTC).minusMonths(minMonths)
+                .atStartOfDay().toInstant(ZoneOffset.UTC);
+
+        return !earliest.isAfter(threshold);
+    }
+
+    /**
+     * Scenario contract: status is INSUFFICIENT_DATA, score/level/explain are left
+     * null so they are omitted from the payload, and the failure is identified by
+     * a stable code rather than an ad-hoc string. Nothing is persisted — there is
+     * no score to record.
+     */
+    private RiskScoreResponse buildInsufficientDataResponse(Long customer_id) {
+        log.debug("insufficient transaction history for customer {}", customer_id);
+
+        RiskScoreResponse response = new RiskScoreResponse();
+        response.setCustomerId(customer_id);
+        response.setStatus(RiskScoreStatus.INSUFFICIENT_DATA);
+        response.setCode("RISK_SCORE_INSUFFICIENT_DATA");
+        response.setMessage("Not enough transaction history to calculate a risk score.");
+        response.setCalculatedAt(Instant.now());
+        return response;
     }
 
     private boolean hasFrozenAccount(Long customer_id) {
