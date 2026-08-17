@@ -65,7 +65,11 @@ public class SavingsInsightChatService {
     public ChatQueryResponse ask(Long customerId, String rawMessage) {
         GuardrailResult guardrail = guardrailService.evaluate(rawMessage);
         if (!guardrail.allowed()) {
-            chatLogRepository.log(customerId, safe(rawMessage), guardrail.declineMessage(), "GUARDRAIL_BLOCKED");
+            // Blocked before any tool could run, so nothing was retrieved. This is a
+            // refusal rather than a fallback: the customer is told the topic is out of
+            // scope, not given degraded guidance.
+            chatLogRepository.log(customerId, safe(rawMessage), guardrail.declineMessage(),
+                    "GUARDRAIL_BLOCKED", false, false, List.of());
             return new ChatQueryResponse(guardrail.declineMessage(), List.of(), false, true);
         }
 
@@ -81,15 +85,22 @@ public class SavingsInsightChatService {
         } catch (Exception ex) {
             log.error("Chat model call failed for customer {}", customerId, ex);
             citationTracker.reset();
-            chatLogRepository.log(customerId, rawMessage, GENERATION_ERROR_MESSAGE, "ERROR");
+            // Retrieval may have partially succeeded before the failure, but nothing from
+            // it reached the customer, so this is logged as no retrieval + fallback.
+            chatLogRepository.log(customerId, rawMessage, GENERATION_ERROR_MESSAGE,
+                    "ERROR", false, true, List.of());
             return new ChatQueryResponse(GENERATION_ERROR_MESSAGE, List.of(), true, false);
         }
 
         List<String> basedOn = citationTracker.drainCitations();
         boolean limitedData = !citationTracker.drainUsedPersonalData();
+        // Distinct from limitedData on purpose: a knowledge-base-only answer retrieved
+        // real content but is still non-personalized, so it is retrieval + fallback.
+        boolean retrievalOccurred = !basedOn.isEmpty();
         String outcome = limitedData ? "FALLBACK" : "ANSWERED";
 
-        chatLogRepository.log(customerId, rawMessage, reply, outcome);
+        chatLogRepository.log(customerId, rawMessage, reply, outcome,
+                retrievalOccurred, limitedData, basedOn);
 
         return new ChatQueryResponse(reply, basedOn, limitedData, false);
     }

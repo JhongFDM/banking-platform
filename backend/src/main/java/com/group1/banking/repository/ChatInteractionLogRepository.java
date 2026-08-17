@@ -2,6 +2,7 @@ package com.group1.banking.repository;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 
 import jakarta.annotation.PostConstruct;
 
@@ -40,6 +41,15 @@ public class ChatInteractionLogRepository {
                     created_at TIMESTAMPTZ NOT NULL
                 )
                 """);
+        // Added after the table was first created, so these have to be ALTERs rather
+        // than columns in the CREATE above - CREATE TABLE IF NOT EXISTS is a no-op on
+        // an existing table and would silently leave older deployments without them.
+        jdbcTemplate.execute("""
+                ALTER TABLE chat_interaction_log
+                    ADD COLUMN IF NOT EXISTS retrieval_occurred BOOLEAN NOT NULL DEFAULT FALSE,
+                    ADD COLUMN IF NOT EXISTS fallback_triggered BOOLEAN NOT NULL DEFAULT FALSE,
+                    ADD COLUMN IF NOT EXISTS sources TEXT
+                """);
         jdbcTemplate.execute("""
                 CREATE INDEX IF NOT EXISTS idx_chat_interaction_log_customer_id
                     ON chat_interaction_log (customer_id)
@@ -47,13 +57,30 @@ public class ChatInteractionLogRepository {
     }
 
     /**
-     * @param outcome one of ANSWERED, GUARDRAIL_BLOCKED, FALLBACK, ERROR - used by QA
-     *                to validate that unsafe topics were actually blocked.
+     * Records one chat turn for traceability/QA review (T-BRD 6.1).
+     *
+     * {@code retrievalOccurred} and {@code fallbackTriggered} are deliberately separate
+     * flags rather than being inferred from {@code outcome}: a turn can retrieve from the
+     * knowledge base and still fall back to general guidance because no personal data was
+     * used, and collapsing both into one column loses that distinction.
+     *
+     * @param outcome            one of ANSWERED, GUARDRAIL_BLOCKED, FALLBACK, ERROR - lets QA
+     *                           validate that unsafe topics were actually blocked
+     * @param retrievalOccurred  whether any approved source (accounts, transactions, goals,
+     *                           knowledge base) was actually consulted for this turn
+     * @param fallbackTriggered  whether the customer received general/controlled guidance
+     *                           rather than a fully personalized answer
+     * @param sources            plain-language basis for the answer, as shown to the customer;
+     *                           stored null when nothing was retrieved
      */
-    public void log(Long customerId, String query, String response, String outcome) {
+    public void log(Long customerId, String query, String response, String outcome,
+                    boolean retrievalOccurred, boolean fallbackTriggered, List<String> sources) {
+        String joinedSources = (sources == null || sources.isEmpty()) ? null : String.join(" | ", sources);
         jdbcTemplate.update(
-                "INSERT INTO chat_interaction_log (customer_id, query, response, outcome, created_at) " +
-                        "VALUES (?, ?, ?, ?, ?)",
-                customerId, query, response, outcome, Timestamp.from(Instant.now()));
+                "INSERT INTO chat_interaction_log (customer_id, query, response, outcome, "
+                        + "retrieval_occurred, fallback_triggered, sources, created_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                customerId, query, response, outcome,
+                retrievalOccurred, fallbackTriggered, joinedSources, Timestamp.from(Instant.now()));
     }
 }
