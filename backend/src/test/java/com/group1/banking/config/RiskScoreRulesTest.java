@@ -68,7 +68,7 @@ class RiskScoreRulesTest {
                 .getBands().get(0);
         assertThat(first.getMax()).isEqualTo(0.5);
         assertThat(first.getScore()).isEqualTo(10);
-        assertThat(first.getMeaning()).isEqualTo("healthy");
+        assertThat(first.getExplain()).isEqualTo("healthy");
     }
 
     /**

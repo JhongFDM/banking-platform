@@ -118,7 +118,7 @@ class RiskScoreServiceInsufficientDataTest {
 
         RiskScoreResponse response = riskScoreService.calculateRiskScore(CUSTOMER_ID);
 
-        assertThat(response.getStatus()).isEqualTo(RiskScoreStatus.INSUFFICIENT_DATA);
+        assertThat(response.getCalculateStatus()).isEqualTo(RiskScoreStatus.INSUFFICIENT_DATA);
     }
 
     @Test
@@ -127,7 +127,7 @@ class RiskScoreServiceInsufficientDataTest {
 
         RiskScoreResponse response = riskScoreService.calculateRiskScore(CUSTOMER_ID);
 
-        assertThat(response.getStatus()).isEqualTo(RiskScoreStatus.INSUFFICIENT_DATA);
+        assertThat(response.getCalculateStatus()).isEqualTo(RiskScoreStatus.INSUFFICIENT_DATA);
     }
 
     /**
@@ -142,7 +142,7 @@ class RiskScoreServiceInsufficientDataTest {
 
         assertThat(response.getScore()).isNull();
         assertThat(response.getLevel()).isNull();
-        assertThat(response.getExplain()).isNull();
+        assertThat(response.getOverAllExplain()).isNull();
     }
 
     /**
@@ -198,10 +198,10 @@ class RiskScoreServiceInsufficientDataTest {
 
         RiskScoreResponse response = riskScoreService.calculateRiskScore(CUSTOMER_ID);
 
-        assertThat(response.getStatus()).isEqualTo(RiskScoreStatus.OK);
+        assertThat(response.getCalculateStatus()).isEqualTo(RiskScoreStatus.OK);
         assertThat(response.getScore()).isNotNull();
         assertThat(response.getLevel()).isNotNull();
-        assertThat(response.getExplain()).isNotBlank();
+        assertThat(response.getOverAllExplain()).isNotBlank();
         assertThat(response.getCode()).isNull();
         verify(riskScoreRepository).save(any());
     }

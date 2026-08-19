@@ -143,8 +143,8 @@ public class RiskScoreService {
         RiskScore riskScoreEntity = new RiskScore();
         riskScoreEntity.setVersion(riskScoreRules.getVersion());
         riskScoreEntity.setScore(riskScore);
-        riskScoreEntity.setBand(correctRiskScoreBand.getLevel());
-        riskScoreEntity.setStatus(RiskScoreStatus.OK);
+        riskScoreEntity.setRiskLevel(correctRiskScoreBand.getLevel());
+        riskScoreEntity.setCalculateStatus(RiskScoreStatus.OK);
         try {
             riskScoreEntity.setFactors(objectMapper.writeValueAsString(riskScoreFactors));
         } catch (JacksonException e) {
@@ -213,7 +213,7 @@ public class RiskScoreService {
 
         RiskScoreResponse response = new RiskScoreResponse();
         response.setCustomerId(customer_id);
-        response.setStatus(RiskScoreStatus.INSUFFICIENT_DATA);
+        response.setCalculateStatus(RiskScoreStatus.INSUFFICIENT_DATA);
         response.setCode("RISK_SCORE_INSUFFICIENT_DATA");
         response.setMessage("Not enough transaction history to calculate a risk score.");
         response.setCalculatedAt(Instant.now());
@@ -372,7 +372,7 @@ public class RiskScoreService {
         factor.setWeight(weight);
         factor.setSubscore(correctBand.getScore());
         factor.setContribution(contribution);
-        factor.setExplanation(correctBand.getMeaning());
+        factor.setExplanation(correctBand.getExplain());
         factor.setValid(true);
         return factor;
     }

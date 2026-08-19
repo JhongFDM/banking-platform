@@ -27,14 +27,15 @@ public class RiskScoreMapper {
     private final JsonMapper objectMapper;
 
     public RiskScoreResponse toResponse(RiskScore riskScore) {
-        String explain = riskScoreRules.getRiskScoreBands().stream().filter(b -> b.getLevel() == riskScore.getBand())
-                .map(RiskScoreBand::getExplain).findFirst().orElse(null);
+        String explain = riskScoreRules.getRiskScoreBands().stream()
+                .filter(b -> b.getLevel() == riskScore.getRiskLevel())
+                .map(RiskScoreBand::getOverallExplain).findFirst().orElse(null);
 
         return RiskScoreResponse.builder()
                 .customerId(riskScore.getCustomer().getCustomerId()).score(riskScore.getScore())
-                .level(riskScore.getBand()).explain(explain)
+                .level(riskScore.getRiskLevel()).overAllExplain(explain)
                 .factors(parseFactors(riskScore.getFactors()))
-                .status(riskScore.getStatus()).calculatedAt(riskScore.getCalculatedAt())
+                .calculateStatus(riskScore.getCalculateStatus()).calculatedAt(riskScore.getCalculatedAt())
                 .build();
     }
 

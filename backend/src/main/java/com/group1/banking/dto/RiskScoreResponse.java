@@ -26,8 +26,8 @@ public class RiskScoreResponse {
     private Long customerId;
     private Double score;
     private RiskScoreLevel level;
-    private String explain;
-    private RiskScoreStatus status; // enum: ok, insufficient_data
+    private String overAllExplain;
+    private RiskScoreStatus calculateStatus; // enum: ok, insufficient_data
     private List<RiskScoreFactor> factors;
     private Instant calculatedAt;
 
