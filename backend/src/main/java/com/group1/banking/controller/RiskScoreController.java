@@ -1,5 +1,7 @@
 package com.group1.banking.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,7 +34,16 @@ public class RiskScoreController {
         return ResponseEntity.ok(riskScoreResponse);
     }
 
-    // getting can be used by any customer
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("customers/{id}/history")
+    public ResponseEntity<List<RiskScoreResponse>> getRiskScoreHistory(@PathVariable Long id,
+            @AuthenticationPrincipal CustomUserPrincipal principal) {
+
+        List<RiskScoreResponse> scoreHistory = this.riskScoreService.getRiskScoreHistory(id);
+        return ResponseEntity.ok(scoreHistory);
+    }
+
+    // customer-allowed
     @PreAuthorize("(hasAuthority('CUSTOMER_READ') and "
             + "@ownershipService.canAccessCustomer(authentication, #id)) "
             + "or hasRole('ADMIN')")

@@ -153,16 +153,6 @@ public class RiskScoreService {
         riskScoreEntity.setCustomer(customer);
         riskScoreRepository.save(riskScoreEntity);
 
-        // return riskScoreResponse
-        // RiskScoreResponse riskScoreResponse = new RiskScoreResponse();
-        // riskScoreResponse.setCustomerId(customer_id);
-        // riskScoreResponse.setScore(riskScore);
-        // riskScoreResponse.setLevel(correctRiskScoreBand.getLevel());
-        // riskScoreResponse.setExplain(correctRiskScoreBand.getExplain());
-        // riskScoreResponse.setStatus(RiskScoreStatus.OK);
-        // riskScoreResponse.setFactors(riskScoreFactors);
-        // riskScoreResponse.setCalculatedAt(riskScoreEntity.getCalculatedAt());
-
         RiskScoreResponse riskScoreResponse = riskScoreMapper.toResponse(riskScoreEntity);
 
         return riskScoreResponse;
@@ -180,15 +170,25 @@ public class RiskScoreService {
                 .orElseThrow(() -> new NotFoundException("RISK_SCORE_NOT_FOUND", "Customer doesn't have risk score yet",
                         Map.of("customer_id", customer_id)));
 
-        return null;
+        return riskScoreMapper.toResponse(recentRiskScore);
     }
 
-    /**
-     * A score is only meaningful once the customer's transaction history spans at
-     * least the configured minimum. Measured from the earliest transaction on
-     * record rather than from the look-back window, so a customer who simply had
-     * a quiet recent quarter is not mistaken for a new one.
-     */
+    public List<RiskScoreResponse> getRiskScoreHistory(Long customer_id) {
+        Customer customer = this.customerRepository.findById(customer_id)
+                .orElseThrow(
+                        () -> new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
+                                Map.of("customer_id", customer_id)));
+
+        List<RiskScore> scoreHistory = this.riskScoreRepository
+                .findAllByCustomerCustomerIdOrderByCalculatedAtDesc(customer_id)
+                .orElseThrow(() -> new NotFoundException("RISK_SCORE_NOT_FOUND", "Customer doesn't have risk score yet",
+                        Map.of("customer_id", customer_id)));
+
+        return scoreHistory.stream().map(record -> riskScoreMapper.toResponse(record)).toList();
+    }
+
+    // check if the customer's transcation history is long enough
+    // if not, the risk assessment is not meaningful
     private boolean hasEnoughHistory(Long customer_id) {
         Instant earliest = this.transactionRepository.findEarliestTimestampForCustomer(customer_id);
         if (earliest == null) {
