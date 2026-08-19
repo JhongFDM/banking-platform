@@ -12,8 +12,6 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
 import com.group1.banking.config.RiskScoreRules;
 import com.group1.banking.config.RiskScoreRules.Band;
 import com.group1.banking.config.RiskScoreRules.FactorConfig;
@@ -32,6 +30,7 @@ import com.group1.banking.enums.RiskScoreDataElement;
 import com.group1.banking.enums.RiskScoreLevel;
 import com.group1.banking.enums.RiskScoreStatus;
 import com.group1.banking.exception.NotFoundException;
+import com.group1.banking.mapper.RiskScoreMapper;
 import com.group1.banking.repository.AccountRepository;
 import com.group1.banking.repository.CustomerRepository;
 import com.group1.banking.repository.RiskScoreRepository;
@@ -40,6 +39,8 @@ import com.group1.banking.security.CustomUserPrincipal;
 import com.group1.banking.service.SavingsGoalService;
 
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @Slf4j
@@ -51,6 +52,7 @@ public class RiskScoreService {
     private final TransactionRepository transactionRepository;
     private final SavingsGoalService savingsGoalService;
     private final JsonMapper objectMapper;
+    private final RiskScoreMapper riskScoreMapper;
 
     private final RiskScoreRules riskScoreRules;
 
@@ -61,7 +63,8 @@ public class RiskScoreService {
 
     public RiskScoreService(RiskScoreRepository riskScoreRepository, CustomerRepository customerRepository,
             AccountRepository accountRepository, TransactionRepository transactionRepository,
-            SavingsGoalService savingsGoalService, RiskScoreRules riskScoreRules, JsonMapper objectMapper) {
+            SavingsGoalService savingsGoalService, RiskScoreRules riskScoreRules, JsonMapper objectMapper,
+            RiskScoreMapper riskScoreMapper) {
         this.riskScoreRepository = riskScoreRepository;
         this.customerRepository = customerRepository;
         this.accountRepository = accountRepository;
@@ -69,6 +72,7 @@ public class RiskScoreService {
         this.savingsGoalService = savingsGoalService;
         this.riskScoreRules = riskScoreRules;
         this.objectMapper = objectMapper;
+        this.riskScoreMapper = riskScoreMapper;
     }
 
     @Transactional
@@ -86,9 +90,7 @@ public class RiskScoreService {
         List<Transaction> transactions = getAllTranscations(customer_id);
 
         // Without a long enough transaction history the factor calculations fall
-        // back to their neutral defaults (zero ratio, max coverage), which would
-        // score a brand new customer as LOW. Report the shortfall instead of
-        // inventing a score.
+        // back to their neutral defaults
         if (!hasEnoughHistory(customer_id)) {
             return buildInsufficientDataResponse(customer_id);
         }
@@ -152,20 +154,32 @@ public class RiskScoreService {
         riskScoreRepository.save(riskScoreEntity);
 
         // return riskScoreResponse
-        RiskScoreResponse riskScoreResponse = new RiskScoreResponse();
-        riskScoreResponse.setCustomerId(customer_id);
-        riskScoreResponse.setScore(riskScore);
-        riskScoreResponse.setLevel(correctRiskScoreBand.getLevel());
-        riskScoreResponse.setExplain(correctRiskScoreBand.getExplain());
-        riskScoreResponse.setStatus(RiskScoreStatus.OK);
-        riskScoreResponse.setFactors(riskScoreFactors);
-        riskScoreResponse.setCalculatedAt(riskScoreEntity.getCalculatedAt());
+        // RiskScoreResponse riskScoreResponse = new RiskScoreResponse();
+        // riskScoreResponse.setCustomerId(customer_id);
+        // riskScoreResponse.setScore(riskScore);
+        // riskScoreResponse.setLevel(correctRiskScoreBand.getLevel());
+        // riskScoreResponse.setExplain(correctRiskScoreBand.getExplain());
+        // riskScoreResponse.setStatus(RiskScoreStatus.OK);
+        // riskScoreResponse.setFactors(riskScoreFactors);
+        // riskScoreResponse.setCalculatedAt(riskScoreEntity.getCalculatedAt());
+
+        RiskScoreResponse riskScoreResponse = riskScoreMapper.toResponse(riskScoreEntity);
 
         return riskScoreResponse;
 
     }
 
     public RiskScoreResponse getRiskScoreById(Long customer_id, CustomUserPrincipal principal) {
+        Customer customer = this.customerRepository.findById(customer_id)
+                .orElseThrow(
+                        () -> new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
+                                Map.of("customer_id", customer_id)));
+
+        RiskScore recentRiskScore = this.riskScoreRepository
+                .findFirstByCustomerCustomerIdOrderByCalculatedAtDesc(customer_id)
+                .orElseThrow(() -> new NotFoundException("RISK_SCORE_NOT_FOUND", "Customer doesn't have risk score yet",
+                        Map.of("customer_id", customer_id)));
+
         return null;
     }
 

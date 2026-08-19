@@ -3,12 +3,12 @@ package com.group1.banking.dto;
 import java.time.Instant;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.group1.banking.enums.RiskScoreLevel;
 import com.group1.banking.enums.RiskScoreStatus;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
  * contract requires those fields to be absent rather than present-and-null.
  */
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)

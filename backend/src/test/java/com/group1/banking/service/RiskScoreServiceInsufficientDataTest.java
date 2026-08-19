@@ -4,6 +4,7 @@ import com.group1.banking.config.RiskScoreRules;
 import com.group1.banking.dto.RiskScoreResponse;
 import com.group1.banking.entity.Customer;
 import com.group1.banking.enums.RiskScoreStatus;
+import com.group1.banking.mapper.RiskScoreMapper;
 import com.group1.banking.repository.AccountRepository;
 import com.group1.banking.repository.CustomerRepository;
 import com.group1.banking.repository.RiskScoreRepository;
@@ -90,8 +91,10 @@ class RiskScoreServiceInsufficientDataTest {
     void setUp() throws IOException {
         riskScoreRules = loadRealRules();
 
+        JsonMapper jsonMapper = JsonMapper.builder().build();
         riskScoreService = new RiskScoreService(riskScoreRepository, customerRepository, accountRepository,
-                transactionRepository, savingsGoalService, riskScoreRules, JsonMapper.builder().build());
+                transactionRepository, savingsGoalService, riskScoreRules, jsonMapper,
+                new RiskScoreMapper(riskScoreRules, jsonMapper));
 
         Customer customer = new Customer();
         customer.setCustomerId(CUSTOMER_ID);
