@@ -160,10 +160,10 @@ public class RiskScoreService {
     }
 
     public RiskScoreResponse getRiskScoreById(Long customer_id, CustomUserPrincipal principal) {
-        Customer customer = this.customerRepository.findById(customer_id)
-                .orElseThrow(
-                        () -> new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
-                                Map.of("customer_id", customer_id)));
+        if (!this.customerRepository.existsById(customer_id)) {
+            throw new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
+                    Map.of("customer_id", customer_id));
+        }
 
         RiskScore recentRiskScore = this.riskScoreRepository
                 .findFirstByCustomerCustomerIdOrderByCalculatedAtDesc(customer_id)
@@ -174,10 +174,10 @@ public class RiskScoreService {
     }
 
     public List<RiskScoreResponse> getRiskScoreHistory(Long customer_id) {
-        Customer customer = this.customerRepository.findById(customer_id)
-                .orElseThrow(
-                        () -> new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
-                                Map.of("customer_id", customer_id)));
+        if (!this.customerRepository.existsById(customer_id)) {
+            throw new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
+                    Map.of("customer_id", customer_id));
+        }
 
         List<RiskScore> scoreHistory = this.riskScoreRepository
                 .findAllByCustomerCustomerIdOrderByCalculatedAtDesc(customer_id)
