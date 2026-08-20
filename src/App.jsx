@@ -32,6 +32,7 @@ import { useTheme } from './theme/ThemeContext';
 
 import voltioIcon from './images/Voltio_icon.png';
 import voltioIconGreen from './images/Voltio_icon_green.png';
+import { AdminRiskScorePage } from './pages/AdminRiskScorePage';
 
 function getDefaultAuthenticatedRoute(authState) {
   const isAdmin = authState.roles.includes('ADMIN') || authState.roles.includes('ROLE_ADMIN');
@@ -384,6 +385,7 @@ export default function App() {
           <Route element={<AdminRoute />}>
             <Route path="/admin/customers" element={<AdminCustomersPage />} />
             <Route path="/admin/accounts" element={<AccountAdminListPage />} />
+            <Route path="/admin/:customerId/risk-assessment" element={<AdminRiskScorePage/>} />
           </Route>
           <Route path="/customer/create" element={<CustomerCreatePage />} />
           <Route path="/customer/:customerId" element={<CustomerDetailPage />} />

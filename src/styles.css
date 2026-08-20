@@ -857,6 +857,28 @@ a.account-card:hover {
   font-size: 2rem;
 }
 
+/* ── Risk record cards ────────────────────────────────────────── */
+
+.risk-card-score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.risk-card-score-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.risk-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
 .text-block-tight-top {
   margin: 0.25rem 0 0;
 }
@@ -2139,6 +2161,33 @@ summary:focus-visible {
   color: #ffd3dc;
 }
 
+/* ── Risk level badges ────────────────────────────────────────── */
+
+.risk-low {
+  background: rgba(57, 255, 136, 0.16);
+  color: #b7ffd8;
+}
+
+.risk-moderate {
+  background: rgba(255, 209, 102, 0.2);
+  color: #fff1c6;
+}
+
+.risk-elevated {
+  background: rgba(255, 145, 77, 0.18);
+  color: #ffdcc2;
+}
+
+.risk-high {
+  background: rgba(255, 77, 109, 0.16);
+  color: #ffd3dc;
+}
+
+.risk-unknown {
+  background: rgba(71, 85, 105, 0.28);
+  color: var(--text-muted);
+}
+
 /* ── GoalProgressBar ──────────────────────────────────────────── */
 
 .goal-progress-container {
@@ -2529,6 +2578,31 @@ body.theme-classic .status-achieved {
 body.theme-classic .status-overdue {
   background: rgba(185, 28, 28, 0.12);
   color: #b91c1c;
+}
+
+body.theme-classic .risk-low {
+  background: rgba(22, 101, 52, 0.14);
+  color: #166534;
+}
+
+body.theme-classic .risk-moderate {
+  background: rgba(161, 98, 7, 0.14);
+  color: #a16207;
+}
+
+body.theme-classic .risk-elevated {
+  background: rgba(194, 65, 12, 0.14);
+  color: #c2410c;
+}
+
+body.theme-classic .risk-high {
+  background: rgba(185, 28, 28, 0.12);
+  color: #b91c1c;
+}
+
+body.theme-classic .risk-unknown {
+  background: rgba(55, 65, 81, 0.1);
+  color: #374151;
 }
 
 body.theme-classic .amount-input-group:focus-within {
