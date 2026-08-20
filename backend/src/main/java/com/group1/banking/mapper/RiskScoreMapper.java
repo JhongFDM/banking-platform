@@ -32,7 +32,8 @@ public class RiskScoreMapper {
                 .map(RiskScoreBand::getOverallExplain).findFirst().orElse(null);
 
         return RiskScoreResponse.builder()
-                .customerId(riskScore.getCustomer().getCustomerId()).score(riskScore.getScore())
+                .customerId(riskScore.getCustomer().getCustomerId())
+                .riskScoreId(riskScore.getId()).score(riskScore.getScore())
                 .level(riskScore.getRiskLevel()).overAllExplain(explain)
                 .factors(parseFactors(riskScore.getFactors()))
                 .calculateStatus(riskScore.getCalculateStatus()).calculatedAt(riskScore.getCalculatedAt())

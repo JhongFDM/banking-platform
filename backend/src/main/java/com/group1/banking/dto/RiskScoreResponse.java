@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RiskScoreResponse {
     private Long customerId;
+    private Long riskScoreId;
     private Double score;
     private RiskScoreLevel level;
     private String overAllExplain;
