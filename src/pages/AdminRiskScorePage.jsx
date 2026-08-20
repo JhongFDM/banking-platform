@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useListCustomerAccounts } from "../hooks/useListCustomerAccounts";
 import { useListRiskAssessmentHistory } from "../hooks/useListRiskAssessmentHistory";
 import RiskRecordItem from "../components/RiskRecordItem";
+import { calculateRiskScore } from "../api/riskAssessment";
 
 export function AdminRiskScorePage() {
   const navigate = useNavigate();
@@ -49,6 +50,11 @@ export function AdminRiskScorePage() {
 
   const customerName = customerQuery.data?.name;
 
+  async function handleRiskCalculation(){
+    await calculateRiskScore(customerId);
+    await riskQuery.refetch();
+  }
+
   return (
     <>
       {/* Banner messages at the very top, outside main content */}
@@ -76,7 +82,7 @@ export function AdminRiskScorePage() {
               </p>
             </div>
             {customerId && !customerError ? (
-              <button type="button">Calculate Risk Score</button>
+              <button type="button" onClick={handleRiskCalculation}>Calculate Risk Score</button>
             ) : null}
           </div>
           {isAdmin ? (
