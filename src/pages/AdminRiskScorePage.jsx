@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCustomer, listCustomers } from "../api/customers";
@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useListCustomerAccounts } from "../hooks/useListCustomerAccounts";
 import { useListRiskAssessmentHistory } from "../hooks/useListRiskAssessmentHistory";
 import RiskRecordItem from "../components/RiskRecordItem";
+import RiskReportPanel from "../components/RiskReportPanel";
 import { calculateRiskScore } from "../api/riskAssessment";
 
 export function AdminRiskScorePage() {
@@ -116,7 +117,7 @@ export function AdminRiskScorePage() {
           {/* TODO: tabs — assessment list (accordion + pie) and score trend (line chart) */}
         </section>
 
-        {/*------------------------ */}
+        {/*--------Risk Score History List---------------- */}
         <section className="panel stack">
           <div className="page-header-row">
             <div>
@@ -135,7 +136,20 @@ export function AdminRiskScorePage() {
           {riskQuery.data && riskQuery.data.length > 0 ? (
             <div className="account-card-list">
               {riskQuery.data.map((r) => (
-                <RiskRecordItem key={r.riskScoreId} record={r} />
+                <Fragment key={r.riskScoreId}>
+                  <RiskRecordItem
+                    record={r}
+                    isExpanded={expandedScoreId === r.riskScoreId}
+                    onToggle={() =>
+                      setExpandedScoreId((current) =>
+                        current === r.riskScoreId ? null : r.riskScoreId
+                      )
+                    }
+                  />
+                  {expandedScoreId === r.riskScoreId ? (
+                    <RiskReportPanel record={r} />
+                  ) : null}
+                </Fragment>
               ))}
             </div>
           ) : !riskQuery.isLoading && !risksError ? (

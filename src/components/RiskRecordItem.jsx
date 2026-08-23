@@ -7,12 +7,26 @@ const LEVEL_CLASSES = {
   HIGH: 'risk-high',
 }
 
-export default function RiskRecordItem({ record }) {
+export default function RiskRecordItem({ record, isExpanded, onToggle }) {
   const levelClass = LEVEL_CLASSES[record.level] || 'risk-unknown'
   const hasScore = record.score !== null && record.score !== undefined
 
+  function handleKeyDown(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onToggle()
+    }
+  }
+
   return (
-    <div className="account-card">
+    <div
+      className="account-card risk-card-clickable"
+      role="button"
+      tabIndex={0}
+      aria-expanded={isExpanded}
+      onClick={onToggle}
+      onKeyDown={handleKeyDown}
+    >
       <div className="account-card-header">
         <span className="account-card-balance risk-card-score">
           {hasScore ? Math.round(record.score) : '--'}
