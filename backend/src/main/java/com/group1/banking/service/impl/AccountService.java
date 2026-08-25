@@ -42,6 +42,10 @@ import com.group1.banking.entity.accountcontrol.AccountControlActionType;
 import com.group1.banking.security.AuthenticatedUser;
 import com.group1.banking.security.CustomUserPrincipal;
 import com.group1.banking.service.AccountControlAuditService;
+import com.group1.banking.service.AuditService;
+import com.group1.banking.entity.AuditEventType;
+import com.group1.banking.entity.AuditOutcome;
+import com.group1.banking.enums.RoleName;
 import com.group1.banking.service.AuthService;
 
 @Service
@@ -55,6 +59,7 @@ public class AccountService {
     private final UserRepository userRepository;
     private final GicRepository gicRepository;
     private final AccountControlAuditService accountControlAuditService;
+    private final AuditService auditService;
 
     public AccountService(
             AccountRepository accountRepository,
@@ -62,13 +67,14 @@ public class AccountService {
             AuthService authorizationService,
             UserRepository userRepository,
             GicRepository gicRepository,
-            AccountControlAuditService accountControlAuditService) {
+            AccountControlAuditService accountControlAuditService,AuditService auditService) {
         this.accountRepository = accountRepository;
         this.customerRepository = customerRepository;
         this.authorizationService = authorizationService;
         this.userRepository = userRepository;
         this.gicRepository = gicRepository;
         this.accountControlAuditService = accountControlAuditService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -79,7 +85,20 @@ public class AccountService {
         validateCreateRequest(request, customer);
 
         Account account = buildAccount(request, customer);
-        return AccountResponse.from(accountRepository.save(account));
+        Account saved = accountRepository.save(account);
+
+        try {
+            auditService.log(AuditEventType.ACCOUNT_CREATED,
+                    "accounts",
+                    primaryRole(user),
+                    user.getUserId().toString(),
+                    "ACCOUNT",
+                    String.valueOf(saved.getAccountId()),
+                    AuditOutcome.SUCCESS,
+                    null);
+        } catch (Exception ignored) {}
+
+        return AccountResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
@@ -131,14 +150,14 @@ public class AccountService {
         accountRepository.save(account);
 
         accountControlAuditService.logEvent(
-                account.getAccountId(),
-                user.getUserId().toString(),
-                primaryRole(user),
-                AccountControlActionType.FREEZE,
-                previousStatus,
-                AccountStatus.FROZEN,
-                request.reason(),
-                request.notes());
+            account.getAccountId(),
+            user.getUserId().toString(),
+            primaryRole(user).name(),
+            AccountControlActionType.FREEZE,
+            previousStatus,
+            AccountStatus.FROZEN,
+            request.reason(),
+            request.notes());
 
         return new AccountControlActionResponse(
                 account.getAccountId(),
@@ -173,14 +192,14 @@ public class AccountService {
         accountRepository.save(account);
 
         accountControlAuditService.logEvent(
-                account.getAccountId(),
-                user.getUserId().toString(),
-                primaryRole(user),
-                AccountControlActionType.UNFREEZE,
-                previousStatus,
-                AccountStatus.ACTIVE,
-                reason,
-                notes);
+            account.getAccountId(),
+            user.getUserId().toString(),
+            primaryRole(user).name(),
+            AccountControlActionType.UNFREEZE,
+            previousStatus,
+            AccountStatus.ACTIVE,
+            reason,
+            notes);
 
         return new AccountControlActionResponse(
                 account.getAccountId(),
@@ -222,7 +241,23 @@ public class AccountService {
         if (request.interestRate() != null) {
             account.setInterestRate(scaleInterestRate(request.interestRate()));
         }
-        return AccountResponse.from(accountRepository.save(account));
+        Account saved = accountRepository.save(account);
+
+        // Audit interest-rate updates
+        if (request.interestRate() != null) {
+            try {
+                auditService.log(AuditEventType.INTEREST_RATE_UPDATED,
+                        "accounts",
+                        primaryRole(user),
+                        user.getUserId().toString(),
+                        "ACCOUNT",
+                        String.valueOf(saved.getAccountId()),
+                        AuditOutcome.SUCCESS,
+                        "interestRate=" + request.interestRate());
+            } catch (Exception ignored) {}
+        }
+
+        return AccountResponse.from(saved);
     }
 
     @Transactional
@@ -236,6 +271,16 @@ public class AccountService {
         account.setStatus(AccountStatus.CLOSED);
         account.setDeletedAt(Instant.now());
         accountRepository.save(account);
+        try {
+            auditService.log(AuditEventType.ACCOUNT_DELETED,
+                    "accounts",
+                    primaryRole(user),
+                    user.getUserId().toString(),
+                    "ACCOUNT",
+                    String.valueOf(accountId),
+                    AuditOutcome.SUCCESS,
+                    null);
+        } catch (Exception ignored) {}
     }
 
     private void validateCreateRequest(CreateAccountRequest request, Customer customer) {
@@ -338,6 +383,17 @@ public class AccountService {
         account.setDeletedAt(now);
         accountRepository.save(account);
 
+        try {
+            auditService.log(AuditEventType.ACCOUNT_DELETED,
+                "accounts",
+                primaryRole(user),
+                user.getUserId().toString(),
+                "ACCOUNT",
+                String.valueOf(accountId),
+                AuditOutcome.SUCCESS,
+                null);
+        } catch (Exception ignored) {}
+
         return Map.of(
                 "message", "RRSP account closed successfully",
                 "accountId", accountId,
@@ -408,9 +464,11 @@ public class AccountService {
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (!(authentication.getPrincipal() instanceof CustomUserPrincipal principal)) {
+        Object principalObj = authentication == null ? null : authentication.getPrincipal();
+        if (!(principalObj instanceof CustomUserPrincipal)) {
             throw new UnauthorisedException("UNAUTHORIZED", "Authenticated user not found.");
         }
+        CustomUserPrincipal principal = (CustomUserPrincipal) principalObj;
         UUID userId = principal.getUserId();
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorisedException("UNAUTHORIZED", "Authenticated user not found."));
@@ -427,8 +485,8 @@ public class AccountService {
         }
     }
 
-    private String primaryRole(User user) {
-        return user.getRoles().stream().findFirst().map(Enum::name).orElse("UNKNOWN");
+    private RoleName primaryRole(User user) {
+        return user.getRoles().stream().findFirst().orElse(RoleName.CUSTOMER);
     }
 
     private void checkAuthorization(User user, Long customerId) {
