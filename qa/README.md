@@ -1,28 +1,29 @@
-# QA Branch Workflow
+# QA Automation Workspace
 
-## Purpose
-Use `QA` as the only branch for QA commits and pushes.
+This folder contains QA-only assets and test automation frameworks.
 
-## Sync latest dev changes into QA
-Run from branch `QA`:
+## Branch policy
+- Work on branch `QA` only.
+- Never push to any branch other than `QA`.
+- Pull dev updates from `origin/feature/springai` into `QA`.
 
-```powershell
-git fetch origin
-git merge --ff-only origin/feature/springai
-```
+## Layout
+- `selenium/` - Existing Selenium + Cucumber + Maven suite.
+- `playwright/` - New Playwright suite (in progress).
+- `.githooks/` - Local git safeguards for QA-only commits/pushes.
+- `.github/` - QA-specific Copilot guidance.
+- `sync-from-feature.ps1` - Sync helper from dev branch into QA.
 
-If fast-forward is not possible:
-
-```powershell
-git fetch origin
-git merge origin/feature/springai
-```
-
-## Push QA results
+## Common commands
+Sync QA with latest dev branch:
 
 ```powershell
-git push origin QA
+./sync-from-feature.ps1
 ```
 
-## Guardrails
-Local git hooks in `qa/.githooks` block commits and pushes unless you are on `QA`, and block pushes to non-`QA` branch targets.
+Run Selenium suite:
+
+```powershell
+cd ./selenium
+mvn test
+```
