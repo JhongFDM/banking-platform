@@ -11,10 +11,10 @@ import com.group1.banking.repository.IdempotencyRecordRepository;
 import com.group1.banking.repository.TransactionRepository;
 import com.group1.banking.repository.UserRepository;
 import com.group1.banking.security.CustomUserPrincipal;
-import com.group1.banking.service.impl.MonetaryOperationService;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import com.group1.banking.service.AuditService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import com.group1.banking.service.impl.MonetaryOperationService;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.junit.jupiter.api.AfterEach;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -56,6 +57,8 @@ class MonetaryOperationServiceTest {
 
     @InjectMocks
     private MonetaryOperationService monetaryOperationService;
+    @Mock
+    private AuditService auditService;
 
     private final JsonMapper objectMapper = JsonMapper.builder().build();
 
@@ -66,13 +69,13 @@ class MonetaryOperationServiceTest {
     private Account account;
     private Account toAccount;
 
-    @BeforeEach
-    void setUp() {
+        @BeforeEach
+        void setUp() {
         // Inject real ObjectMapper - since @InjectMocks won't pick it up properly with @Mock,
         // we need to create service manually or inject via reflection
-        monetaryOperationService = new MonetaryOperationService(
+            monetaryOperationService = new MonetaryOperationService(
                 accountRepository, transactionRepository, idempotencyRecordRepository,
-                authorizationService, objectMapper, userRepository);
+                authorizationService, objectMapper, userRepository, auditService);
 
         userId = UUID.randomUUID();
 
