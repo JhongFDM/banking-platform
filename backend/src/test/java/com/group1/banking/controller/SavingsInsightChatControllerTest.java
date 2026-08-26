@@ -20,6 +20,7 @@ import com.group1.banking.service.impl.SavingsInsightChatService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,7 +54,9 @@ class SavingsInsightChatControllerTest {
                 "Based on your dining spend over the last 30 days, you could save by cooking in more.",
                 List.of("Your recent transaction history", "Savings knowledge base: 04-reducing-discretionary-spend.md"),
                 false, false);
-        when(savingsInsightChatService.ask(eq(42L), any())).thenReturn(serviceResponse);
+        // @WithCustomUser always assigns RoleName.CUSTOMER (see its Factory), so the
+        // controller's principal -> actorRole extraction resolves to "CUSTOMER" here.
+        when(savingsInsightChatService.ask(eq(42L), eq("CUSTOMER"), any())).thenReturn(serviceResponse);
 
         mockMvc.perform(post("/api/chat/savings-insights")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -64,7 +67,7 @@ class SavingsInsightChatControllerTest {
                 .andExpect(jsonPath("$.blocked").value(false))
                 .andExpect(jsonPath("$.based_on").isArray());
 
-        verify(savingsInsightChatService).ask(eq(42L), eq("How can I save more on dining out?"));
+        verify(savingsInsightChatService).ask(eq(42L), eq("CUSTOMER"), eq("How can I save more on dining out?"));
     }
 
     @Test
@@ -73,7 +76,7 @@ class SavingsInsightChatControllerTest {
         ChatQueryResponse serviceResponse = new ChatQueryResponse(
                 "I can't help with that topic. Please speak with a licensed advisor.",
                 List.of(), false, true);
-        when(savingsInsightChatService.ask(anyLong(), any())).thenReturn(serviceResponse);
+        when(savingsInsightChatService.ask(anyLong(), anyString(), any())).thenReturn(serviceResponse);
 
         mockMvc.perform(post("/api/chat/savings-insights")
                         .contentType(MediaType.APPLICATION_JSON)

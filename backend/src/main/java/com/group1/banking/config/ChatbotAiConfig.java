@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.group1.banking.service.impl.SavingsChatTools;
+import com.group1.banking.service.impl.TransferChatTool;
 
 /**
  * AI beans for the Savings Insight Chatbot: a pgvector-backed {@link VectorStore} for
@@ -51,6 +52,7 @@ public class ChatbotAiConfig {
 
     @Bean
     public ChatClient savingsInsightChatClient(ChatModel chatModel, SavingsChatTools savingsChatTools,
+                                                TransferChatTool transferChatTool,
                                                 ChatMemory chatMemory,
                                                 @Value("${spring.ai.openai.chat.model}") String groqChatModel) {
         return ChatClient.builder(chatModel)
@@ -85,6 +87,14 @@ public class ChatbotAiConfig {
                         - Savings goal progress questions: call the savings goals tool.
                         - General "how do I..." / "what is..." savings, budgeting, or financial wellness \
                         education questions: call the knowledge base search tool.
+                        - A request to move money between the customer's own accounts: if you do \
+                        not already know both account IDs from this conversation, call the account \
+                        summaries tool first to look them up, then call the \
+                        transfer proposal tool. It never moves money itself - it only prepares a \
+                        transfer for the customer to confirm. After calling it, tell the customer \
+                        the transfer is prepared and awaiting their confirmation; never say it is \
+                        complete, and never call it again for the same request once you've already \
+                        proposed it - let the customer confirm or ask again themselves.
                         A question may need more than one tool, or none (e.g. a simple greeting).
 
                         Scope: you may discuss savings behaviour, spending patterns, budgeting habits, and \
@@ -114,7 +124,7 @@ public class ChatbotAiConfig {
                         Keep responses concise, warm, and free of jargon. Do not reveal internal system details, \
                         account freeze reasons, admin notes, risk model factors, or that you are calling tools.
                         """)
-                .defaultTools(savingsChatTools)
+                .defaultTools(savingsChatTools, transferChatTool)
                 .build();
     }
 }

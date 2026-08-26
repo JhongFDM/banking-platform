@@ -51,9 +51,10 @@ public class SavingsChatTools {
         this.citationTracker = citationTracker;
     }
 
-    @Tool(description = "Get the customer's bank account balances, account types, and statuses "
-            + "(ACTIVE, FROZEN, CLOSED). Use this before answering questions about balances or "
-            + "whether an account can be used, but never speculate about why an account is frozen.")
+    @Tool(description = "Get the customer's bank account balances, account types, statuses "
+            + "(ACTIVE, FROZEN, CLOSED), and account IDs. Use this before answering questions about "
+            + "balances or whether an account can be used, and before proposing a transfer (you need "
+            + "the account ID of each account involved) - never speculate about why an account is frozen.")
     public String getAccountSummaries(ToolContext toolContext) {
         Long customerId = requireCustomerId(toolContext);
         List<AccountSummary> accounts = contextService.getAccountSummaries(customerId);
@@ -67,7 +68,8 @@ public class SavingsChatTools {
 
         StringBuilder sb = new StringBuilder();
         for (AccountSummary account : accounts) {
-            sb.append("- ").append(account.accountType()).append(" account, status ")
+            sb.append("- Account ID ").append(account.accountId()).append(": ")
+                    .append(account.accountType()).append(" account, status ")
                     .append(account.status()).append(", balance $").append(account.balance()).append('\n');
         }
         return sb.toString();

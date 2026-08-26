@@ -85,6 +85,14 @@ public class GlobalExceptionHandler {
                                         .body(new ErrorResponse(apiEx.getCode(), apiEx.getMessage(), apiEx.getDetails()));
                 }
 
+    @ExceptionHandler(GoneException.class)
+    public ResponseEntity<ErrorResponse> handleGone(GoneException ex) {
+        ApiException apiEx = ex;
+        logger.warn("Confirmation gone/expired. code={}, message={}", apiEx.getCode(), apiEx.getMessage());
+        return ResponseEntity.status(410)
+                .body(new ErrorResponse(apiEx.getCode(), apiEx.getMessage(), apiEx.getDetails()));
+    }
+
     @ExceptionHandler(OwnershipException.class)
     public ResponseEntity<ErrorResponse> handleOwnership(OwnershipException ex) {
         logger.warn("Ownership check failed: {}", ex.getMessage());

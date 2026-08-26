@@ -57,7 +57,11 @@ public class ChatInteractionLogRepository {
     }
 
     /**
-     * Records one chat turn for traceability/QA review (T-BRD 6.1).
+     * Records one chat turn for traceability/QA review (T-BRD 6.1), and returns the
+     * generated row ID so the caller can cross-reference it from the shared audit log
+     * (CFG-03, see AuditService). The audit log stores a lightweight pointer to a
+     * turn (actor, action, outcome); the full query/response text and cited sources
+     * stay here, reachable from the audit row via that ID.
      *
      * {@code retrievalOccurred} and {@code fallbackTriggered} are deliberately separate
      * flags rather than being inferred from {@code outcome}: a turn can retrieve from the
@@ -72,14 +76,16 @@ public class ChatInteractionLogRepository {
      *                           rather than a fully personalized answer
      * @param sources            plain-language basis for the answer, as shown to the customer;
      *                           stored null when nothing was retrieved
+     * @return the generated {@code chat_interaction_log.id} for this row
      */
-    public void log(Long customerId, String query, String response, String outcome,
+    public Long log(Long customerId, String query, String response, String outcome,
                     boolean retrievalOccurred, boolean fallbackTriggered, List<String> sources) {
         String joinedSources = (sources == null || sources.isEmpty()) ? null : String.join(" | ", sources);
-        jdbcTemplate.update(
+        return jdbcTemplate.queryForObject(
                 "INSERT INTO chat_interaction_log (customer_id, query, response, outcome, "
                         + "retrieval_occurred, fallback_triggered, sources, created_at) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+                Long.class,
                 customerId, query, response, outcome,
                 retrievalOccurred, fallbackTriggered, joinedSources, Timestamp.from(Instant.now()));
     }
