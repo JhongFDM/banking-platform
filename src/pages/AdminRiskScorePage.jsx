@@ -15,7 +15,8 @@ export function AdminRiskScorePage() {
   const { customerId } = useParams();
   const { isAdmin, rememberCustomerId } = useAuth();
   const [error, setError] = useState(null);
-  const [actionMessage, setActionMessage] = useState(null);
+  const [infoMessage, setInfoMessage] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
   const [expandedScoreId, setExpandedScoreId] = useState(null);
 
   const riskQuery = useListRiskAssessmentHistory(customerId);
@@ -44,25 +45,42 @@ export function AdminRiskScorePage() {
     }
 
     setError(null);
-    setActionMessage(null);
+    setInfoMessage(null);
     rememberCustomerId(nextCustomerId);
     navigate(`/admin/${nextCustomerId}/risk-assessment`);
   }
 
   const customerName = customerQuery.data?.name;
 
-  async function handleRiskCalculation(){
-    await calculateRiskScore(customerId);
-    await riskQuery.refetch();
+  async function handleRiskCalculation() {
+    setError(null);
+    setInfoMessage(null);
+    setIsCalculating(true);
+
+    try {
+      const result = await calculateRiskScore(customerId);
+
+      // INSUFFICIENT_DATA comes back as a 200 with no score, not an error
+      if (result.calculateStatus === "INSUFFICIENT_DATA") {
+        setInfoMessage(
+          result.message || "Not enough transaction history to calculate a risk score."
+        );
+        return;
+      }
+      await riskQuery.refetch();
+    } catch (caughtError) {
+      setError(mapAxiosError(caughtError));
+    } finally {
+      setIsCalculating(false);
+    }
   }
 
   return (
     <>
       {/* Banner messages at the very top, outside main content */}
       <div className="banner-stack">
-        {actionMessage ? (
-          <div className="banner success">{actionMessage}</div>
-        ) : null}
+
+        {infoMessage ? <div className="banner info">{infoMessage}</div> : null}
         {error ? <div className="banner error">{error.message}</div> : null}
         {customerError ? (
           <div className="banner error">{customerError.message}</div>
@@ -83,7 +101,13 @@ export function AdminRiskScorePage() {
               </p>
             </div>
             {customerId && !customerError ? (
-              <button type="button" onClick={handleRiskCalculation}>Calculate Risk Score</button>
+              <button
+                type="button"
+                onClick={handleRiskCalculation}
+                disabled={isCalculating}
+              >
+                {isCalculating ? "Calculating..." : "Calculate Risk Score"}
+              </button>
             ) : null}
           </div>
           {isAdmin ? (
@@ -114,7 +138,6 @@ export function AdminRiskScorePage() {
             </div>
           ) : null}
 
-          {/* TODO: tabs — assessment list (accordion + pie) and score trend (line chart) */}
         </section>
 
         {/*--------Risk Score History List---------------- */}

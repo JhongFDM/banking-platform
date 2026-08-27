@@ -43,10 +43,7 @@ public class RiskScoreController {
         return ResponseEntity.ok(scoreHistory);
     }
 
-    // customer-allowed
-    @PreAuthorize("(hasAuthority('CUSTOMER_READ') and "
-            + "@ownershipService.canAccessCustomer(authentication, #id)) "
-            + "or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("customers/{id}")
     public ResponseEntity<RiskScoreResponse> getRiskScore(@PathVariable Long id,
             @AuthenticationPrincipal CustomUserPrincipal principal) {

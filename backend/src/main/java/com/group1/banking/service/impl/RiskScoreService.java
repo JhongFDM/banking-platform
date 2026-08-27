@@ -77,6 +77,29 @@ public class RiskScoreService {
 
     @Transactional
     public RiskScoreResponse calculateRiskScore(Long customer_id) {
+        RiskScore riskScoreEntity = buildRiskScore(customer_id);
+
+        if (riskScoreEntity == null) {
+            return buildInsufficientDataResponse(customer_id);
+        }
+
+        riskScoreRepository.save(riskScoreEntity);
+
+        return riskScoreMapper.toResponse(riskScoreEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public RiskScoreResponse calculateRiskScoreWithoutSaving(Long customer_id) {
+        RiskScore riskScoreEntity = buildRiskScore(customer_id);
+
+        if (riskScoreEntity == null) {
+            return buildInsufficientDataResponse(customer_id);
+        }
+
+        return riskScoreMapper.toResponse(riskScoreEntity);
+    }
+
+    private RiskScore buildRiskScore(Long customer_id) {
         Customer customer = this.customerRepository.findById(customer_id)
                 .orElseThrow(
                         () -> new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
@@ -92,7 +115,7 @@ public class RiskScoreService {
         // Without a long enough transaction history the factor calculations fall
         // back to their neutral defaults
         if (!hasEnoughHistory(customer_id)) {
-            return buildInsufficientDataResponse(customer_id);
+            return null;
         }
 
         // get all factors
@@ -139,7 +162,6 @@ public class RiskScoreService {
             log.debug("frozen account override applied for customer {}", customer_id);
         }
 
-        // save risk score
         RiskScore riskScoreEntity = new RiskScore();
         riskScoreEntity.setVersion(riskScoreRules.getVersion());
         riskScoreEntity.setScore(riskScore);
@@ -151,12 +173,8 @@ public class RiskScoreService {
             throw new IllegalStateException("Failed to serialize risk score factor", e);
         }
         riskScoreEntity.setCustomer(customer);
-        riskScoreRepository.save(riskScoreEntity);
 
-        RiskScoreResponse riskScoreResponse = riskScoreMapper.toResponse(riskScoreEntity);
-
-        return riskScoreResponse;
-
+        return riskScoreEntity;
     }
 
     public RiskScoreResponse getRiskScoreById(Long customer_id, CustomUserPrincipal principal) {

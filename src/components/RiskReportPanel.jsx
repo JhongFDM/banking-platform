@@ -43,8 +43,6 @@ function formatPoints(value) {
   return isNumber(value) ? value.toFixed(1) : '--'
 }
 
-// Weight arrives normalized as a 0-1 fraction, and is renormalized server-side
-// when a factor drops out, so it only reads correctly as a percentage.
 function formatWeight(value) {
   return isNumber(value) ? `${Math.round(value * 100)}%` : '--'
 }
@@ -74,9 +72,7 @@ export default function RiskReportPanel({ record }) {
   const isInsufficient = record.calculateStatus === 'INSUFFICIENT_DATA'
 
   // Contributions sum to the score, so each slice is literally that factor's
-  // share of the total. Zero-contribution factors (the frozen-account override,
-  // or a factor with no data behind it) would render as invisible slices, so
-  // they stay in the written breakdown only.
+  // share of the total. Zero-contribution factors would render as invisible slices.
   const scoringFactors = factors.filter(
     (factor) =>
       factor.valid && isNumber(factor.contribution) && factor.contribution > 0
@@ -94,7 +90,7 @@ export default function RiskReportPanel({ record }) {
   return (
     <section className="panel risk-report">
       <div className="risk-report-grid">
-        {/* ── Left: the written report ─────────────────────────────── */}
+        {/* Left: Report */}
         <div className="risk-report-info">
           <header className="risk-report-header">
             <div className="risk-report-score">
@@ -199,7 +195,7 @@ export default function RiskReportPanel({ record }) {
           )}
         </div>
 
-        {/* ── Right: contribution share ────────────────────────────── */}
+        {/* RRight: Pie Chart */}
         <div className="risk-report-chart">
           <h4 className="risk-report-subtitle">Score Contribution</h4>
           {pieData.length > 0 ? (
