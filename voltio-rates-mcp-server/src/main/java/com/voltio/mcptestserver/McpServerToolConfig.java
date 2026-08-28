@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Configuration;
 public class McpServerToolConfig {
 
     @Bean
-    public ToolCallbackProvider testServerTools(PingTool pingTool) {
+    public ToolCallbackProvider testServerTools(PingTool pingTool, GicRateTool gicRateTool) {
         return MethodToolCallbackProvider.builder()
-                .toolObjects(pingTool)
+                .toolObjects(pingTool, gicRateTool)
                 .build();
     }
 }

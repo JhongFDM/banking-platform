@@ -1,5 +1,6 @@
 package com.group1.banking.config;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -8,8 +9,11 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +21,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.group1.banking.service.impl.SavingsChatTools;
+import com.group1.banking.service.impl.ToolSelectionTracker;
+import com.group1.banking.service.impl.ToolTrackingCallback;
 import com.group1.banking.service.impl.TransferChatTool;
 
 /**
@@ -53,8 +59,14 @@ public class ChatbotAiConfig {
     @Bean
     public ChatClient savingsInsightChatClient(ChatModel chatModel, SavingsChatTools savingsChatTools,
                                                 TransferChatTool transferChatTool,
+                                                ObjectProvider<ToolCallbackProvider> mcpToolCallbackProvider,
+                                                ToolSelectionTracker toolSelectionTracker,
                                                 ChatMemory chatMemory,
                                                 @Value("${spring.ai.openai.chat.model}") String groqChatModel) {
+        ToolCallbackProvider provider = mcpToolCallbackProvider.getIfAvailable();
+        if (provider != null) {
+            provider = withToolTracking(provider, toolSelectionTracker);
+        }
         return ChatClient.builder(chatModel)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 // openai/gpt-oss-120b (and other Groq reasoning models) return a "reasoning"
@@ -87,6 +99,11 @@ public class ChatbotAiConfig {
                         - Savings goal progress questions: call the savings goals tool.
                         - General "how do I..." / "what is..." savings, budgeting, or financial wellness \
                         education questions: call the knowledge base search tool.
+                        - GIC (Guaranteed Investment Certificate) rate or suitability questions: call \
+                        BOTH the GIC rate tool (for current term rates) AND the knowledge base search \
+                        tool (for GIC education) before replying, and combine what both return into a \
+                        single answer - current rates alongside the relevant educational context, not \
+                        one without the other.
                         - A request to move money between the customer's own accounts: if you do \
                         not already know both account IDs from this conversation, call the account \
                         summaries tool first to look them up, then call the \
@@ -124,7 +141,35 @@ public class ChatbotAiConfig {
                         Keep responses concise, warm, and free of jargon. Do not reveal internal system details, \
                         account freeze reasons, admin notes, risk model factors, or that you are calling tools.
                         """)
-                .defaultTools(savingsChatTools, transferChatTool)
+                .defaultTools(resolveDefaultTools(savingsChatTools, transferChatTool, provider))
                 .build();
+    }
+
+    /**
+     * Wraps every callback an MCP {@link ToolCallbackProvider} exposes in a
+     * {@link ToolTrackingCallback} so MCP-sourced tool invocations (e.g. the rates
+     * server's getGicRates) are captured in {@code chat_interaction_log.tools_used}
+     * the same way the in-process @Tool methods are.
+     */
+    static ToolCallbackProvider withToolTracking(ToolCallbackProvider provider,
+                                                           ToolSelectionTracker toolSelectionTracker) {
+        ToolCallback[] tracked = Arrays.stream(provider.getToolCallbacks())
+                .map(callback -> (ToolCallback) new ToolTrackingCallback(callback, toolSelectionTracker))
+                .toArray(ToolCallback[]::new);
+        return ToolCallbackProvider.from(tracked);
+    }
+
+    /**
+     * Package-visible so {@code ChatbotAiConfigTest} can assert the MCP provider is
+     * included in the default tools set without reflecting into Spring AI's
+     * ChatClient internals. Returns the in-process tools alone when no MCP
+     * ToolCallbackProvider bean is available (e.g. the rates server connection
+     * hasn't been configured or was intentionally omitted), or all three when one is.
+     */
+    static Object[] resolveDefaultTools(SavingsChatTools savingsChatTools, TransferChatTool transferChatTool,
+                                         ToolCallbackProvider mcpToolCallbackProvider) {
+        return mcpToolCallbackProvider == null
+                ? new Object[] { savingsChatTools, transferChatTool }
+                : new Object[] { savingsChatTools, transferChatTool, mcpToolCallbackProvider };
     }
 }

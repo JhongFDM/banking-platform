@@ -70,6 +70,7 @@ public class SavingsInsightChatService {
     private final ChatInteractionLogRepository chatLogRepository;
     private final SavingsChatCitationTracker citationTracker;
     private final PendingActionTracker pendingActionTracker;
+    private final ToolSelectionTracker toolSelectionTracker;
     private final AuditService auditService;
 
     public SavingsInsightChatService(SavingsChatGuardrailService guardrailService,
@@ -77,12 +78,14 @@ public class SavingsInsightChatService {
                                       ChatInteractionLogRepository chatLogRepository,
                                       SavingsChatCitationTracker citationTracker,
                                       PendingActionTracker pendingActionTracker,
+                                      ToolSelectionTracker toolSelectionTracker,
                                       AuditService auditService) {
         this.guardrailService = guardrailService;
         this.chatClient = chatClient;
         this.chatLogRepository = chatLogRepository;
         this.citationTracker = citationTracker;
         this.pendingActionTracker = pendingActionTracker;
+        this.toolSelectionTracker = toolSelectionTracker;
         this.auditService = auditService;
     }
 
@@ -93,13 +96,14 @@ public class SavingsInsightChatService {
             // refusal rather than a fallback: the customer is told the topic is out of
             // scope, not given degraded guidance.
             Long chatLogId = chatLogRepository.log(customerId, safe(rawMessage), guardrail.declineMessage(),
-                    "GUARDRAIL_BLOCKED", false, false, List.of());
+                    "GUARDRAIL_BLOCKED", false, false, List.of(), List.of());
             audit(customerId, actorRole, chatLogId, "GUARDRAIL_BLOCKED");
             return new ChatQueryResponse(guardrail.declineMessage(), List.of(), false, true);
         }
 
         citationTracker.reset();
         pendingActionTracker.reset();
+        toolSelectionTracker.reset();
         String reply;
         try {
             reply = chatClient.prompt()
@@ -112,10 +116,11 @@ public class SavingsInsightChatService {
             log.error("Chat model call failed for customer {}", customerId, ex);
             citationTracker.reset();
             pendingActionTracker.reset();
+                toolSelectionTracker.reset();
             // Retrieval may have partially succeeded before the failure, but nothing from
             // it reached the customer, so this is logged as no retrieval + fallback.
             Long chatLogId = chatLogRepository.log(customerId, rawMessage, GENERATION_ERROR_MESSAGE,
-                    "ERROR", false, true, List.of());
+                    "ERROR", false, true, List.of(), List.of());
             audit(customerId, actorRole, chatLogId, "ERROR");
             return new ChatQueryResponse(GENERATION_ERROR_MESSAGE, List.of(), true, false);
         }
@@ -125,10 +130,11 @@ public class SavingsInsightChatService {
         // Distinct from limitedData on purpose: a knowledge-base-only answer retrieved
         // real content but is still non-personalized, so it is retrieval + fallback.
         boolean retrievalOccurred = !basedOn.isEmpty();
+        List<String> toolsUsed = toolSelectionTracker.drainToolsUsed();
         String outcome = limitedData ? "FALLBACK" : "ANSWERED";
 
         Long chatLogId = chatLogRepository.log(customerId, rawMessage, reply, outcome,
-                retrievalOccurred, limitedData, basedOn);
+            retrievalOccurred, limitedData, basedOn, toolsUsed);
         audit(customerId, actorRole, chatLogId, outcome);
 
         ChatQueryResponse response = new ChatQueryResponse(reply, basedOn, limitedData, false);

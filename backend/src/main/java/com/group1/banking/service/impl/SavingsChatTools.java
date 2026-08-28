@@ -36,6 +36,7 @@ public class SavingsChatTools {
     private final SavingsChatContextService contextService;
     private final VectorStore vectorStore;
     private final SavingsChatCitationTracker citationTracker;
+    private final ToolSelectionTracker toolSelectionTracker;
 
     @Value("${app.chatbot.knowledge-base.top-k:4}")
     private int knowledgeBaseTopK;
@@ -45,10 +46,12 @@ public class SavingsChatTools {
 
     public SavingsChatTools(SavingsChatContextService contextService,
                              VectorStore vectorStore,
-                             SavingsChatCitationTracker citationTracker) {
+                             SavingsChatCitationTracker citationTracker,
+                             ToolSelectionTracker toolSelectionTracker) {
         this.contextService = contextService;
         this.vectorStore = vectorStore;
         this.citationTracker = citationTracker;
+        this.toolSelectionTracker = toolSelectionTracker;
     }
 
     @Tool(description = "Get the customer's bank account balances, account types, statuses "
@@ -56,6 +59,7 @@ public class SavingsChatTools {
             + "balances or whether an account can be used, and before proposing a transfer (you need "
             + "the account ID of each account involved) - never speculate about why an account is frozen.")
     public String getAccountSummaries(ToolContext toolContext) {
+        toolSelectionTracker.recordTool("getAccountSummaries");
         Long customerId = requireCustomerId(toolContext);
         List<AccountSummary> accounts = contextService.getAccountSummaries(customerId);
 
@@ -82,6 +86,7 @@ public class SavingsChatTools {
             @ToolParam(description = "Number of days to look back, e.g. 30 for last month. Defaults to 30 if not specified.", required = false)
             Integer days,
             ToolContext toolContext) {
+        toolSelectionTracker.recordTool("getRecentSpendingByCategory");
         Long customerId = requireCustomerId(toolContext);
         int lookbackDays = (days == null || days <= 0) ? 30 : Math.min(days, 365);
 
@@ -108,6 +113,7 @@ public class SavingsChatTools {
             + "time remaining, and status (NOT_STARTED, IN_PROGRESS, ACHIEVED, OVERDUE). Use this for any "
             + "question about savings goal progress.")
     public String getSavingsGoals(ToolContext toolContext) {
+        toolSelectionTracker.recordTool("getSavingsGoals");
         Long customerId = requireCustomerId(toolContext);
         List<SavingsGoalResponse> goals = contextService.getSavingsGoals(customerId);
 
@@ -138,6 +144,7 @@ public class SavingsChatTools {
     public String searchSavingsKnowledgeBase(
             @ToolParam(description = "A short search phrase capturing what the customer wants to know, e.g. 'building an emergency fund'")
             String query) {
+        toolSelectionTracker.recordTool("searchSavingsKnowledgeBase");
         try {
             List<Document> docs = vectorStore.similaritySearch(SearchRequest.builder()
                     .query(query)

@@ -32,13 +32,16 @@ public class TransferChatTool {
     private final SavingsChatContextService contextService;
     private final ConfirmationGateService confirmationGateService;
     private final PendingActionTracker pendingActionTracker;
+    private final ToolSelectionTracker toolSelectionTracker;
 
     public TransferChatTool(SavingsChatContextService contextService,
                              ConfirmationGateService confirmationGateService,
-                             PendingActionTracker pendingActionTracker) {
+                             PendingActionTracker pendingActionTracker,
+                             ToolSelectionTracker toolSelectionTracker) {
         this.contextService = contextService;
         this.confirmationGateService = confirmationGateService;
         this.pendingActionTracker = pendingActionTracker;
+        this.toolSelectionTracker = toolSelectionTracker;
     }
 
     @Tool(description = "Propose a transfer of money between two of the customer's own accounts. "
@@ -53,6 +56,7 @@ public class TransferChatTool {
             @ToolParam(description = "A short description/memo for the transfer", required = false) String description,
             ToolContext toolContext) {
 
+        toolSelectionTracker.recordTool("proposeTransfer");
         Long customerId = requireCustomerId(toolContext);
         String actorRole = requireActorRole(toolContext);
 

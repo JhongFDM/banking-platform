@@ -10,21 +10,28 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Confirms the MCP (Model Context Protocol) client is wired up at startup.
+ * Confirms the MCP (Model Context Protocol) client is wired up at startup and reports
+ * its status without ever failing that startup.
  *
- * This adds no product feature yet - no MCP servers are configured by default (see
- * the "MCP client" section in application.properties), so {@code toolCallbackProvider}
- * resolves to zero tool callbacks under normal startup. It exists purely so the
- * plumbing (dependency + autoconfiguration, and a place for an Agent to later pull in
- * MCP-provided tools alongside its existing @Tool methods) is visible and verifiable
- * from the boot log, ahead of any real MCP server being connected.
+ * By default, the chatbot's Agent connects to a rates MCP server (see
+ * spring.ai.mcp.client.sse.connections.rates-server in application.properties) that
+ * serves the GIC rate lookup tool used alongside the savings knowledge base for GIC
+ * inquiries. That connection is lazily initialized
+ * (spring.ai.mcp.client.initialized=false), so it is only actually attempted on first
+ * use, not during startup - this listener's own call to
+ * {@code provider.getToolCallbacks()} may be that first use, and is wrapped
+ * accordingly: if the rates server is unreachable, this logs a warning and the
+ * backend still starts normally, and chat requests remain available with the
+ * MCP-backed tool simply absent from that turn (Spring AI surfaces the failure to the
+ * model as a tool error rather than failing the request - see
+ * spring.ai.tools.throw-exception-on-error).
  *
  * When the opt-in "mcptest" profile is active (see application-mcptest.properties)
- * and mcp-test-server is running, a "ping" tool becomes available. In that case this
- * also calls it and logs the real response, proving a full MCP round trip
- * (initialize -> list tools -> call tool) rather than just tool discovery. That call
- * only ever happens if a tool literally named "ping" is present, so it stays a no-op
- * under the default (server-less) configuration.
+ * and the standalone MCP test module is running with an overridden endpoint, a
+ * "ping" tool may also be available. In that case this calls it and logs the real
+ * response, proving a full MCP round trip (initialize -> list tools -> call tool)
+ * beyond just tool discovery. That call only ever happens if a tool literally named
+ * "ping" is present, so it's a no-op otherwise.
  *
  * Uses {@link ObjectProvider} rather than a required constructor dependency so that
  * if no MCP-related bean is ever produced (e.g. the starter is removed, or
@@ -53,10 +60,18 @@ public class McpClientDiagnostics {
             return;
         }
 
-        ToolCallback[] callbacks = provider.getToolCallbacks();
-        log.info("MCP client wired up: {} tool callback(s) available from configured MCP servers "
-                + "(0 is expected until a server is added under spring.ai.mcp.client.* in "
-                + "application.properties).", callbacks.length);
+        ToolCallback[] callbacks;
+        try {
+            callbacks = provider.getToolCallbacks();
+        } catch (Exception ex) {
+            log.warn("MCP client: could not reach the configured MCP server(s) at startup. "
+                    + "Backend startup continues normally - MCP-backed tools (e.g. GIC rates) will "
+                    + "simply be unavailable to the chatbot until the server is reachable.", ex);
+            return;
+        }
+
+        log.info("MCP client wired up: {} tool callback(s) available from the configured MCP server(s).",
+                callbacks.length);
 
         for (ToolCallback callback : callbacks) {
             if (PING_TOOL_NAME.equals(callback.getToolDefinition().name())) {

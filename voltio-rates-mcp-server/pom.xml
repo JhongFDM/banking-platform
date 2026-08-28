@@ -12,16 +12,19 @@
     </parent>
 
     <groupId>com.voltio</groupId>
-    <artifactId>mcp-test-server</artifactId>
+    <artifactId>voltio-rates-mcp-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>mcp-test-server</name>
+    <name>voltio-rates-mcp-server</name>
     <description>
-        Standalone MCP server used only to prove that the banking-platform backend's
-        MCP client (backend/.../config/McpClientDiagnostics.java) can reach and call a
-        real MCP server. Exposes one trivial, side-effect-free tool (ping). Not part of
-        the banking application itself and not referenced by it by default - safe to
-        delete once the client connection is proven, or keep as a template for a real
-        MCP server later.
+        Standalone MCP server providing the Voltio Agent's GIC (Guaranteed Investment
+        Certificate) rate lookup tool (getGicRates), used by the banking-platform
+        backend's Savings Insight Chatbot alongside its knowledge-base RAG content to
+        answer GIC rate and suitability questions. Also retains the original
+        connectivity-proving tool (ping) used by
+        backend/.../config/McpClientDiagnostics.java. Deployed independently of the
+        banking-platform backend, which connects to it over MCP (see
+        spring.ai.mcp.client.sse.connections.rates-server in application.properties)
+        and degrades gracefully if it is unreachable.
     </description>
 
     <properties>
@@ -49,6 +52,11 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

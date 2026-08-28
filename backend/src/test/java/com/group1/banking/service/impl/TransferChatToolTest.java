@@ -27,6 +27,7 @@ class TransferChatToolTest {
     private SavingsChatContextService contextService;
     private ConfirmationGateService confirmationGateService;
     private PendingActionTracker pendingActionTracker;
+    private ToolSelectionTracker toolSelectionTracker;
     private TransferChatTool tool;
 
     @BeforeEach
@@ -34,7 +35,8 @@ class TransferChatToolTest {
         contextService = mock(SavingsChatContextService.class);
         confirmationGateService = mock(ConfirmationGateService.class);
         pendingActionTracker = new PendingActionTracker();
-        tool = new TransferChatTool(contextService, confirmationGateService, pendingActionTracker);
+        toolSelectionTracker = new ToolSelectionTracker();
+        tool = new TransferChatTool(contextService, confirmationGateService, pendingActionTracker, toolSelectionTracker);
 
         when(contextService.getAccountSummaries(CUSTOMER_ID)).thenReturn(List.of(
                 new AccountSummary(1L, "CHECKING", "ACTIVE", new BigDecimal("300.00")),
@@ -57,6 +59,13 @@ class TransferChatToolTest {
         assertThat(reply).contains("50.00").contains(proposed.getToken());
         assertThat(pendingActionTracker.drainProposal()).isPresent();
         assertThat(pendingActionTracker.drainProposal()).isEmpty();
+    }
+
+    @Test
+    void proposeTransfer_shouldRecordItselfOnToolSelectionTracker_evenWhenRefused() {
+        tool.proposeTransfer(1L, 999L, new BigDecimal("50.00"), null, toolContext("CUSTOMER"));
+
+        assertThat(toolSelectionTracker.drainToolsUsed()).containsExactly("proposeTransfer");
     }
 
     @Test

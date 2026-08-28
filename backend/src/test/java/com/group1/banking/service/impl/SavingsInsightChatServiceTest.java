@@ -51,6 +51,7 @@ class SavingsInsightChatServiceTest {
     private ChatInteractionLogRepository chatLogRepository;
     private SavingsChatCitationTracker citationTracker;
     private PendingActionTracker pendingActionTracker;
+        private ToolSelectionTracker toolSelectionTracker;
     private AuditService auditService;
     private SavingsInsightChatService service;
 
@@ -61,14 +62,16 @@ class SavingsInsightChatServiceTest {
         chatLogRepository = mock(ChatInteractionLogRepository.class);
         citationTracker = new SavingsChatCitationTracker();
         pendingActionTracker = new PendingActionTracker();
+        toolSelectionTracker = new ToolSelectionTracker();
         auditService = mock(AuditService.class);
         // Every scenario below cares that the audit row's resourceId is whatever the
         // chat-specific log returned, not what that ID actually is - a fixed stub value
         // keeps that assertion meaningful without coupling every test to a real insert.
-        when(chatLogRepository.log(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any()))
+        when(chatLogRepository.log(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any()))
                 .thenReturn(CHAT_LOG_ID);
         service = new SavingsInsightChatService(
-                guardrailService, chatClient, chatLogRepository, citationTracker, pendingActionTracker, auditService);
+                guardrailService, chatClient, chatLogRepository, citationTracker,
+                pendingActionTracker, toolSelectionTracker, auditService);
     }
 
     /**
@@ -79,7 +82,7 @@ class SavingsInsightChatServiceTest {
         when(chatClient.prompt()
                 .user(anyString())
                 .toolContext(any())
-                .advisors(any(Consumer.class))
+                .advisors(anyAdvisorConsumer())
                 .call()
                 .content())
                 .thenAnswer(invocation -> {
@@ -92,10 +95,15 @@ class SavingsInsightChatServiceTest {
         when(chatClient.prompt()
                 .user(anyString())
                 .toolContext(any())
-                .advisors(any(Consumer.class))
+                .advisors(anyAdvisorConsumer())
                 .call()
                 .content())
                 .thenThrow(failure);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Consumer<ChatClient.AdvisorSpec> anyAdvisorConsumer() {
+        return (Consumer<ChatClient.AdvisorSpec>) any(Consumer.class);
     }
 
     @Test
@@ -115,7 +123,7 @@ class SavingsInsightChatServiceTest {
 
         verify(chatLogRepository).log(eq(CUSTOMER_ID), eq("where is my money going?"),
                 anyString(), eq("ANSWERED"),
-                eq(true), eq(false), eq(List.of("Your recent transaction history")));
+                eq(true), eq(false), eq(List.of("Your recent transaction history")), eq(List.of()));
         verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
                 eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("ANSWERED"));
     }
@@ -136,7 +144,7 @@ class SavingsInsightChatServiceTest {
 
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("FALLBACK"),
                 eq(true), eq(true),
-                eq(List.of("Savings knowledge base: emergency-funds.md")));
+                eq(List.of("Savings knowledge base: emergency-funds.md")), eq(List.of()));
         verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
                 eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("FALLBACK"));
     }
@@ -152,7 +160,7 @@ class SavingsInsightChatServiceTest {
         assertThat(response.getBasedOn()).isEmpty();
 
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("FALLBACK"),
-                eq(false), eq(true), eq(List.of()));
+                eq(false), eq(true), eq(List.of()), eq(List.of()));
         verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
                 eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("FALLBACK"));
     }
@@ -170,7 +178,7 @@ class SavingsInsightChatServiceTest {
         verify(chatClient, never()).prompt();
         verify(chatLogRepository).log(eq(CUSTOMER_ID), eq("which stock should I buy?"),
                 anyString(), eq("GUARDRAIL_BLOCKED"),
-                eq(false), eq(false), eq(List.of()));
+                eq(false), eq(false), eq(List.of()), eq(List.of()));
         verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
                 eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("GUARDRAIL_BLOCKED"));
     }
@@ -189,7 +197,7 @@ class SavingsInsightChatServiceTest {
         assertThat(response.getBasedOn()).isEmpty();
 
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("ERROR"),
-                eq(false), eq(true), eq(List.of()));
+                eq(false), eq(true), eq(List.of()), eq(List.of()));
         verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
                 eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("ERROR"));
     }
@@ -202,7 +210,7 @@ class SavingsInsightChatServiceTest {
         assertThat(response.isBlocked()).isTrue();
         verify(chatClient, never()).prompt();
         verify(chatLogRepository).log(anyLong(), anyString(), anyString(),
-                eq("GUARDRAIL_BLOCKED"), anyBoolean(), anyBoolean(), anyList());
+                eq("GUARDRAIL_BLOCKED"), anyBoolean(), anyBoolean(), anyList(), anyList());
         verify(auditService).log(anyString(), anyString(), eq("CHATBOT_QUERY"),
                 eq("CHATBOT_INTERACTION"), any(), eq("GUARDRAIL_BLOCKED"));
     }
@@ -265,5 +273,68 @@ class SavingsInsightChatServiceTest {
         ChatQueryResponse response = service.ask(CUSTOMER_ID, ACTOR_ROLE, "where is my money going?");
 
         assertThat(response.getPendingConfirmation()).isNull();
+    }
+
+    @Test
+    @DisplayName("GIC rate question: MCP rate tool and knowledge base tool both invoked -> "
+            + "combined answer, both tools logged in invocation order")
+    void ask_whenGicRateQuestion_combinesMcpAndKnowledgeBaseAndLogsBothTools() {
+        stubChatReply("A one-year GIC currently pays 5.00% and locks in your principal until maturity.", () -> {
+            toolSelectionTracker.recordTool("getGicRates");
+            toolSelectionTracker.recordTool("searchSavingsKnowledgeBase");
+            citationTracker.recordCitation("Savings knowledge base: 07-gics-explained.md");
+        });
+
+        ChatQueryResponse response = service.ask(CUSTOMER_ID, ACTOR_ROLE,
+                "what's the rate on a one year GIC and is it a good fit for me?");
+
+        assertThat(response.getResponse()).contains("5.00%");
+        assertThat(response.isBlocked()).isFalse();
+
+        verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), anyString(),
+                anyBoolean(), anyBoolean(), any(),
+                eq(List.of("getGicRates", "searchSavingsKnowledgeBase")));
+    }
+
+    @Test
+    @DisplayName("Tool selection log captures invocations across all tool families "
+            + "(in-process savings tools, transfer tool, MCP) in invocation order")
+    void ask_capturesToolsFromAllFamiliesInInvocationOrder() {
+        stubChatReply("Here is your balance and today's GIC rate; I've also prepared that transfer for you to confirm.",
+                () -> {
+                    toolSelectionTracker.recordTool("getAccountSummaries");
+                    toolSelectionTracker.recordTool("getGicRates");
+                    toolSelectionTracker.recordTool("proposeTransfer");
+                });
+
+        service.ask(CUSTOMER_ID, ACTOR_ROLE, "show my balance, today's GIC rate, and move $50 to savings");
+
+        verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), anyString(),
+                anyBoolean(), anyBoolean(), any(),
+                eq(List.of("getAccountSummaries", "getGicRates", "proposeTransfer")));
+    }
+
+    @Test
+    @DisplayName("Scenario (US3): GIC rate MCP tool unreachable -> chat still answers from the "
+            + "knowledge base instead of failing the request")
+    void ask_whenGicRateMcpToolFails_stillReturnsDegradedAnswerNotError() {
+        // Spring AI's default ToolExecutionExceptionProcessor sends a RuntimeException from a tool
+        // (in-process or MCP) back to the model as a message rather than failing the request, so from
+        // this service's perspective a failed MCP tool call still ends in a normal ChatClient reply -
+        // just one that couldn't use the failed tool's output.
+        stubChatReply("I couldn't check today's live GIC rates right now, but generally a GIC locks in "
+                + "your principal for a fixed term and pays a guaranteed return.", () -> {
+            toolSelectionTracker.recordTool("getGicRates");
+            toolSelectionTracker.recordTool("searchSavingsKnowledgeBase");
+            citationTracker.recordCitation("Savings knowledge base: 07-gics-explained.md");
+        });
+
+        ChatQueryResponse response = service.ask(CUSTOMER_ID, ACTOR_ROLE, "what's the GIC rate right now?");
+
+        assertThat(response.isBlocked()).isFalse();
+        assertThat(response.getResponse()).doesNotContain("unable to generate a response");
+        verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), anyString(),
+                anyBoolean(), anyBoolean(), any(),
+                eq(List.of("getGicRates", "searchSavingsKnowledgeBase")));
     }
 }
