@@ -48,7 +48,8 @@ public class ChatInteractionLogRepository {
                 ALTER TABLE chat_interaction_log
                     ADD COLUMN IF NOT EXISTS retrieval_occurred BOOLEAN NOT NULL DEFAULT FALSE,
                     ADD COLUMN IF NOT EXISTS fallback_triggered BOOLEAN NOT NULL DEFAULT FALSE,
-                    ADD COLUMN IF NOT EXISTS sources TEXT
+                    ADD COLUMN IF NOT EXISTS sources TEXT,
+                    ADD COLUMN IF NOT EXISTS tools_used TEXT
                 """);
         jdbcTemplate.execute("""
                 CREATE INDEX IF NOT EXISTS idx_chat_interaction_log_customer_id
@@ -79,14 +80,16 @@ public class ChatInteractionLogRepository {
      * @return the generated {@code chat_interaction_log.id} for this row
      */
     public Long log(Long customerId, String query, String response, String outcome,
-                    boolean retrievalOccurred, boolean fallbackTriggered, List<String> sources) {
+                boolean retrievalOccurred, boolean fallbackTriggered, List<String> sources,
+                List<String> toolsUsed) {
         String joinedSources = (sources == null || sources.isEmpty()) ? null : String.join(" | ", sources);
+        String joinedToolsUsed = (toolsUsed == null || toolsUsed.isEmpty()) ? null : String.join(" | ", toolsUsed);
         return jdbcTemplate.queryForObject(
                 "INSERT INTO chat_interaction_log (customer_id, query, response, outcome, "
-                        + "retrieval_occurred, fallback_triggered, sources, created_at) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+                + "retrieval_occurred, fallback_triggered, sources, tools_used, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
                 Long.class,
                 customerId, query, response, outcome,
-                retrievalOccurred, fallbackTriggered, joinedSources, Timestamp.from(Instant.now()));
+            retrievalOccurred, fallbackTriggered, joinedSources, joinedToolsUsed, Timestamp.from(Instant.now()));
     }
 }
