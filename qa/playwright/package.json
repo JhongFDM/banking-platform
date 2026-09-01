@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "This folder is reserved for the new Playwright automation set.",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "playwright test -c config/playwright.config.ts",
+    "test:headed": "playwright test -c config/playwright.config.ts --headed"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
