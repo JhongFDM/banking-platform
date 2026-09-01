@@ -113,7 +113,7 @@ class StandingOrderServiceTest {
         when(canadianHolidayService.nextBusinessDay(any())).thenAnswer(inv -> inv.getArgument(0));
         when(standingOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(mapper.toResponse(any())).thenReturn(standingOrderResponse);
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     // ===== create() TESTS =====

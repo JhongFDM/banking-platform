@@ -84,7 +84,7 @@ class TransactionHistoryServiceTest {
         when(transactionQueryRepository
                 .findByAccount_AccountIdAndTimestampBetweenOrderByTimestampAsc(anyLong(), any(), any()))
                 .thenReturn(List.of());
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     // ===== getHistory() TESTS =====
