@@ -66,6 +66,20 @@ describe("SavingsGoalCard", () => {
     expect(screen.getByText(/180 days/)).toBeTruthy();
   });
 
+  it("caps short-term recommendation to one month", () => {
+    render(
+      <SavingsGoalCard
+        goal={makeGoal({
+          target_amount: 5000,
+          current_balance: 1000,
+          time_remaining_days: 3,
+        })}
+      />,
+    );
+
+    expect(screen.getByText("$4000.00 / mo")).toBeTruthy();
+  });
+
   it('T070 edge case: shows "Past deadline" when time_remaining_days is 0', () => {
     render(
       <SavingsGoalCard

@@ -56,14 +56,14 @@ const SavingsGoalCard = ({
   const getRecommendedContribution = () => {
     const remainingAmount = Math.max(
       0,
-      goal.target_amount - (goal.current_balance || 0),
+      (goal.target_amount || 0) - (goal.current_balance || 0),
     );
 
     if (remainingAmount === 0 || goal.time_remaining_days <= 0) {
       return 0;
     }
 
-    const monthsRemaining = goal.time_remaining_days / 30.44;
+    const monthsRemaining = Math.max(1, goal.time_remaining_days / 30.44);
     return remainingAmount / monthsRemaining;
   };
 
