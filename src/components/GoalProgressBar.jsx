@@ -47,17 +47,19 @@ const GoalProgressBar = ({
     }
   }
 
+  const actualProgress =
+    computedProgress !== null ? computedProgress : progressNum;
   const displayProgress = Math.min(
-    computedProgress !== null ? computedProgress : progressNum,
+    targetNum > 0 && balanceNum < targetNum ? Math.max(0, actualProgress) : 100,
     100,
   );
 
   const percentageText =
-    (computedProgress !== null ? computedProgress : progressNum) >= 100
-      ? "100"
-      : computedProgress !== null
-        ? computedProgress.toFixed(2)
-        : String(progressNum.toFixed(2));
+    targetNum > 0 && balanceNum < targetNum
+      ? Number.isInteger(actualProgress)
+        ? String(actualProgress)
+        : actualProgress.toFixed(2)
+      : "100";
 
   // Determine progress color based on percentage
   const getProgressColor = () => {

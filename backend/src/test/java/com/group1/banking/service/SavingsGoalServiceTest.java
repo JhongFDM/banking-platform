@@ -104,6 +104,21 @@ class SavingsGoalServiceTest {
                 .isEqualTo("INVALID_TARGET_AMOUNT");
     }
 
+    @Test // target_amount with more than 2 decimal places is rejected before persistence
+    void createGoal_moreThanTwoDecimalPlaces_throwsInvalidTargetAmount() {
+        when(accountRepository.findById(100L)).thenReturn(Optional.of(account));
+        when(savingsGoalRepository.findActiveByCustomerIdAndAccountId(1L, 100L))
+                .thenReturn(Optional.empty());
+
+        SavingsGoalRequest request = new SavingsGoalRequest("Travel", new BigDecimal("10.001"), LocalDate.now().plusDays(30));
+
+        assertThatThrownBy(() -> savingsGoalService.createGoal(1L, 100L, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("2 decimal places")
+                .extracting(e -> ((BusinessException) e).getCode())
+                .isEqualTo("INVALID_TARGET_AMOUNT");
+    }
+
     @Test // T018: target_date in past returns 400 INVALID_TARGET_DATE (CREATE only)
     void createGoal_pastTargetDate_throwsInvalidTargetDate() {
         when(accountRepository.findById(100L)).thenReturn(Optional.of(account));

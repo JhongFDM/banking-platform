@@ -64,7 +64,8 @@ const SavingsGoalCard = ({
     }
 
     const monthsRemaining = Math.max(1, goal.time_remaining_days / 30.44);
-    return remainingAmount / monthsRemaining;
+    const recommendation = remainingAmount / monthsRemaining;
+    return recommendation < 1 ? 1 : recommendation;
   };
 
   const recommendedContribution = getRecommendedContribution();
@@ -119,14 +120,6 @@ const SavingsGoalCard = ({
               {goal.target_date
                 ? new Date(goal.target_date + "T00:00:00").toLocaleDateString()
                 : ""}
-            </span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Time Remaining:</span>
-            <span className="detail-value">
-              {goal.time_remaining_days > 0
-                ? `${goal.time_remaining_days} days`
-                : "Past deadline"}
             </span>
           </div>
         </div>
