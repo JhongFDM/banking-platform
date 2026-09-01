@@ -159,6 +159,26 @@ public class AccountService {
             request.reason(),
             request.notes());
 
+        // OPC-05's freeze/unfreeze trail is also represented as an event type in the
+        // shared audit capability (CFG-03), not only in the dedicated account_control_audit
+        // table above - see the Agent-orchestration ticket's Scenario 4 requirement that
+        // OPC-05's audit records be "one event type within this shared capability, rather
+        // than maintained as a separate, disconnected mechanism". account_control_audit
+        // remains the source for the dedicated control-history endpoint's richer,
+        // typed fields (previousStatus/newStatus/reason/notes); this is an additive,
+        // best-effort mirror, not a replacement.
+        try {
+            auditService.log(AuditEventType.ACCOUNT_FROZEN,
+                    "account-control",
+                    primaryRole(user),
+                    user.getUserId().toString(),
+                    "FREEZE_ACCOUNT",
+                    String.valueOf(account.getAccountId()),
+                    AuditOutcome.SUCCESS,
+                    "reason=" + request.reason()
+                            + (request.notes() != null ? "; notes=" + request.notes() : ""));
+        } catch (Exception ignored) {}
+
         return new AccountControlActionResponse(
                 account.getAccountId(),
                 previousStatus,
@@ -200,6 +220,19 @@ public class AccountService {
             AccountStatus.ACTIVE,
             reason,
             notes);
+
+        // See the matching comment in freezeAccount: mirrored into the shared audit
+        // capability (CFG-03) alongside the dedicated account_control_audit write above.
+        try {
+            auditService.log(AuditEventType.ACCOUNT_UNFROZEN,
+                    "account-control",
+                    primaryRole(user),
+                    user.getUserId().toString(),
+                    "UNFREEZE_ACCOUNT",
+                    String.valueOf(account.getAccountId()),
+                    AuditOutcome.SUCCESS,
+                    "reason=" + reason + (notes != null ? "; notes=" + notes : ""));
+        } catch (Exception ignored) {}
 
         return new AccountControlActionResponse(
                 account.getAccountId(),

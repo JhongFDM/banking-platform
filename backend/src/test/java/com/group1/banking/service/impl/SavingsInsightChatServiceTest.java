@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 
 import com.group1.banking.dto.chat.ChatQueryResponse;
+import com.group1.banking.entity.AuditEventType;
+import com.group1.banking.entity.AuditOutcome;
+import com.group1.banking.enums.RoleName;
 import com.group1.banking.repository.ChatInteractionLogRepository;
 import com.group1.banking.service.AuditService;
 
@@ -124,8 +127,9 @@ class SavingsInsightChatServiceTest {
         verify(chatLogRepository).log(eq(CUSTOMER_ID), eq("where is my money going?"),
                 anyString(), eq("ANSWERED"),
                 eq(true), eq(false), eq(List.of("Your recent transaction history")), eq(List.of()));
-        verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
-                eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("ANSWERED"));
+        verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
+                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(AuditOutcome.SUCCESS), eq("ANSWERED"));
     }
 
     @Test
@@ -145,8 +149,9 @@ class SavingsInsightChatServiceTest {
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("FALLBACK"),
                 eq(true), eq(true),
                 eq(List.of("Savings knowledge base: emergency-funds.md")), eq(List.of()));
-        verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
-                eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("FALLBACK"));
+        verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
+                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(AuditOutcome.SUCCESS), eq("FALLBACK"));
     }
 
     @Test
@@ -161,8 +166,9 @@ class SavingsInsightChatServiceTest {
 
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("FALLBACK"),
                 eq(false), eq(true), eq(List.of()), eq(List.of()));
-        verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
-                eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("FALLBACK"));
+        verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
+                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(AuditOutcome.SUCCESS), eq("FALLBACK"));
     }
 
     @Test
@@ -179,8 +185,9 @@ class SavingsInsightChatServiceTest {
         verify(chatLogRepository).log(eq(CUSTOMER_ID), eq("which stock should I buy?"),
                 anyString(), eq("GUARDRAIL_BLOCKED"),
                 eq(false), eq(false), eq(List.of()), eq(List.of()));
-        verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
-                eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("GUARDRAIL_BLOCKED"));
+        verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
+                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(AuditOutcome.DENIED), eq("GUARDRAIL_BLOCKED"));
     }
 
     @Test
@@ -198,8 +205,9 @@ class SavingsInsightChatServiceTest {
 
         verify(chatLogRepository).log(eq(CUSTOMER_ID), anyString(), anyString(), eq("ERROR"),
                 eq(false), eq(true), eq(List.of()), eq(List.of()));
-        verify(auditService).log(eq("42"), eq(ACTOR_ROLE), eq("CHATBOT_QUERY"),
-                eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()), eq("ERROR"));
+        verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
+                eq(RoleName.CUSTOMER), eq("42"), eq("CHATBOT_INTERACTION"), eq(CHAT_LOG_ID.toString()),
+                eq(AuditOutcome.ERROR), eq("ERROR"));
     }
 
     @Test
@@ -211,8 +219,8 @@ class SavingsInsightChatServiceTest {
         verify(chatClient, never()).prompt();
         verify(chatLogRepository).log(anyLong(), anyString(), anyString(),
                 eq("GUARDRAIL_BLOCKED"), anyBoolean(), anyBoolean(), anyList(), anyList());
-        verify(auditService).log(anyString(), anyString(), eq("CHATBOT_QUERY"),
-                eq("CHATBOT_INTERACTION"), any(), eq("GUARDRAIL_BLOCKED"));
+        verify(auditService).log(eq(AuditEventType.CHATBOT_QUERY_ANSWERED), eq("SAVINGS_INSIGHT_CHATBOT"),
+                any(), anyString(), eq("CHATBOT_INTERACTION"), any(), eq(AuditOutcome.DENIED), eq("GUARDRAIL_BLOCKED"));
     }
 
     @Test
@@ -223,7 +231,7 @@ class SavingsInsightChatServiceTest {
             citationTracker.markPersonalDataUsed();
         });
         doThrow(new RuntimeException("audit datasource unavailable"))
-                .when(auditService).log(any(), any(), any(), any(), any(), any());
+                .when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
 
         ChatQueryResponse response = service.ask(CUSTOMER_ID, ACTOR_ROLE, "how is my goal going?");
 

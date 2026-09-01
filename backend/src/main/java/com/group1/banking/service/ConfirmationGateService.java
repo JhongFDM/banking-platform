@@ -1,8 +1,11 @@
 package com.group1.banking.service;
 
+import com.group1.banking.entity.AuditEventType;
+import com.group1.banking.entity.AuditOutcome;
 import com.group1.banking.entity.PendingAgentActionEntity;
 import com.group1.banking.entity.PendingAgentActionStatus;
 import com.group1.banking.entity.PendingAgentActionType;
+import com.group1.banking.enums.RoleName;
 import com.group1.banking.exception.ConflictException;
 import com.group1.banking.exception.GoneException;
 import com.group1.banking.exception.NotFoundException;
@@ -36,6 +39,7 @@ public class ConfirmationGateService {
     private static final Logger log = LoggerFactory.getLogger(ConfirmationGateService.class);
     private static final long TTL_MINUTES = 5;
     private static final String RESOURCE_TYPE = "PENDING_AGENT_ACTION";
+    private static final String AUDIT_SOURCE_FEATURE = "AGENT_ACTION_CONFIRMATION";
     private static final String ACTION_PROPOSED = "AGENT_ACTION_PROPOSED";
     private static final String ACTION_CONFIRMED = "AGENT_ACTION_CONFIRMED";
     private static final String ACTION_DENIED = "AGENT_ACTION_DENIED";
@@ -100,9 +104,40 @@ public class ConfirmationGateService {
 
     private void audit(Long customerId, String actorRole, String action, String token, String outcome) {
         try {
-            auditService.log(customerId.toString(), actorRole, action, RESOURCE_TYPE, token, outcome);
+            // The 6-arg AuditService.log(...) shim maps its "outcome" string straight
+            // through AuditOutcome.fromString(), which only recognizes SUCCESS/DENIED/
+            // ERROR - every other value (PROPOSED, CONFIRMED, NOT_FOUND, ...) silently
+            // fell through to ERROR. Calling the richer 8-arg overload directly lets us
+            // map our fine-grained resolution reasons onto the right coarse outcome
+            // while keeping the original reason readable in eventDetails.
+            auditService.log(AuditEventType.OTHER, AUDIT_SOURCE_FEATURE, roleFor(actorRole),
+                    customerId.toString(), RESOURCE_TYPE, token, outcomeFor(outcome), action + ":" + outcome);
         } catch (Exception ex) {
             log.error("Failed to write audit log entry for agent action token {}", token, ex);
+        }
+    }
+
+    /**
+     * Maps this service's fine-grained resolution reasons onto the shared, coarse
+     * {@link AuditOutcome} vocabulary. The original reason is not lost - it is preserved
+     * verbatim in the audit row's eventDetails via {@link #audit}.
+     */
+    private static AuditOutcome outcomeFor(String outcome) {
+        return switch (outcome) {
+            case "PROPOSED", "CONFIRMED" -> AuditOutcome.SUCCESS;
+            case "NOT_FOUND", "ALREADY_RESOLVED", "EXPIRED" -> AuditOutcome.DENIED;
+            default -> AuditOutcome.ERROR;
+        };
+    }
+
+    private static RoleName roleFor(String actorRole) {
+        if (actorRole == null) {
+            return RoleName.CUSTOMER;
+        }
+        try {
+            return RoleName.valueOf(actorRole.replace("ROLE_", "").toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return RoleName.CUSTOMER;
         }
     }
 }
