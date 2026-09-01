@@ -15,5 +15,7 @@ public class RiskScoreFactor {
     private Integer subscore;
     private Double contribution;
     private String explanation;
-    private boolean isValid;
+    // Named to match what Jackson derives from the isValid() getter, so the
+    // factor round-trips through JSON under a single property name.
+    private boolean valid;
 }

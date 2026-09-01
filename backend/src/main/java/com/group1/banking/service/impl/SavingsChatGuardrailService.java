@@ -6,21 +6,28 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 
 /**
- * Fast, pre-LLM guardrail for the Savings Insight Chatbot. Blocks out-of-scope or
- * regulated-advice topics (investment recommendations, loan approval decisions, legal
- * advice, medical advice) before spending a model call, in addition to the system
+ * Fast, pre-LLM guardrail for the Savings Insight Chatbot. Blocks out-of-scope
+ * or
+ * regulated-advice topics (investment recommendations, loan approval decisions,
+ * legal
+ * advice, medical advice) before spending a model call, in addition to the
+ * system
  * prompt's own scope instructions (defense in depth).
  *
- * This is intentionally a simple keyword/phrase filter rather than a second model
- * call, so the bounded set of prompt/response interactions stays deterministic enough
+ * This is intentionally a simple keyword/phrase filter rather than a second
+ * model
+ * call, so the bounded set of prompt/response interactions stays deterministic
+ * enough
  * for QA to validate.
  */
 @Service
 public class SavingsChatGuardrailService {
 
     /**
-     * Phrases that indicate a request for advice outside the approved scope. Matched
-     * as substrings against the lower-cased query, so keep entries reasonably specific
+     * Phrases that indicate a request for advice outside the approved scope.
+     * Matched
+     * as substrings against the lower-cased query, so keep entries reasonably
+     * specific
      * to avoid false positives on legitimate savings questions.
      */
     private static final List<String> BLOCKED_TOPIC_PHRASES = List.of(
@@ -36,11 +43,13 @@ public class SavingsChatGuardrailService {
             // Medical advice
             "medical advice", "diagnos", "symptom", "medication", "prescription",
             // Tax advice
-            "tax advice", "file my taxes", "tax deduction", "tax return"
-    );
+            "tax advice", "file my taxes", "tax deduction", "tax return",
+            // Risk Assessment Detail
+            "my risk score", "my risk band", "my risk level", "my risk rating",
+            "am i high risk", "how risky am i", "risk assessment", "risk factors",
+            "credit rating");
 
-    private static final String DECLINE_MESSAGE =
-            "I can help with savings, budgeting, and general spending questions about your accounts, "
+    private static final String DECLINE_MESSAGE = "I can help with savings, budgeting, and general spending questions about your accounts, "
             + "but I'm not able to advise on that topic. For investment, loan, legal, medical, or tax "
             + "matters, please speak with a licensed advisor or contact our support team.";
 
