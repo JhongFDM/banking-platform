@@ -43,11 +43,11 @@ public class RiskScore {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "band")
-    private RiskScoreLevel band;
+    private RiskScoreLevel riskLevel;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private RiskScoreStatus status;
+    private RiskScoreStatus calculateStatus;
 
     @Column(name = "factors", length = 2000)
     private String factors;

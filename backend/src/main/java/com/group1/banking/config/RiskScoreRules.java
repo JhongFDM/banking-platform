@@ -33,7 +33,7 @@ public class RiskScoreRules {
     public static class RiskScoreBand {
         private int max;
         private RiskScoreLevel level;
-        private String explain;
+        private String overallExplain;
 
     }
 
@@ -47,7 +47,7 @@ public class RiskScoreRules {
     public static class Band {
         private double max;
         private int score;
-        private String meaning;
+        private String explain;
     }
 
 }

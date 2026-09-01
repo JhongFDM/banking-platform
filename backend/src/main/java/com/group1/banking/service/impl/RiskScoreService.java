@@ -12,8 +12,6 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
 import com.group1.banking.config.RiskScoreRules;
 import com.group1.banking.config.RiskScoreRules.Band;
 import com.group1.banking.config.RiskScoreRules.FactorConfig;
@@ -29,8 +27,10 @@ import com.group1.banking.entity.Transaction;
 import com.group1.banking.entity.TransactionDirection;
 import com.group1.banking.entity.TransactionStatus;
 import com.group1.banking.enums.RiskScoreDataElement;
+import com.group1.banking.enums.RiskScoreLevel;
 import com.group1.banking.enums.RiskScoreStatus;
 import com.group1.banking.exception.NotFoundException;
+import com.group1.banking.mapper.RiskScoreMapper;
 import com.group1.banking.repository.AccountRepository;
 import com.group1.banking.repository.CustomerRepository;
 import com.group1.banking.repository.RiskScoreRepository;
@@ -39,6 +39,8 @@ import com.group1.banking.security.CustomUserPrincipal;
 import com.group1.banking.service.SavingsGoalService;
 
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @Slf4j
@@ -50,6 +52,7 @@ public class RiskScoreService {
     private final TransactionRepository transactionRepository;
     private final SavingsGoalService savingsGoalService;
     private final JsonMapper objectMapper;
+    private final RiskScoreMapper riskScoreMapper;
 
     private final RiskScoreRules riskScoreRules;
 
@@ -60,7 +63,8 @@ public class RiskScoreService {
 
     public RiskScoreService(RiskScoreRepository riskScoreRepository, CustomerRepository customerRepository,
             AccountRepository accountRepository, TransactionRepository transactionRepository,
-            SavingsGoalService savingsGoalService, RiskScoreRules riskScoreRules, JsonMapper objectMapper) {
+            SavingsGoalService savingsGoalService, RiskScoreRules riskScoreRules, JsonMapper objectMapper,
+            RiskScoreMapper riskScoreMapper) {
         this.riskScoreRepository = riskScoreRepository;
         this.customerRepository = customerRepository;
         this.accountRepository = accountRepository;
@@ -68,10 +72,34 @@ public class RiskScoreService {
         this.savingsGoalService = savingsGoalService;
         this.riskScoreRules = riskScoreRules;
         this.objectMapper = objectMapper;
+        this.riskScoreMapper = riskScoreMapper;
     }
 
     @Transactional
     public RiskScoreResponse calculateRiskScore(Long customer_id) {
+        RiskScore riskScoreEntity = buildRiskScore(customer_id);
+
+        if (riskScoreEntity == null) {
+            return buildInsufficientDataResponse(customer_id);
+        }
+
+        riskScoreRepository.save(riskScoreEntity);
+
+        return riskScoreMapper.toResponse(riskScoreEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public RiskScoreResponse calculateRiskScoreWithoutSaving(Long customer_id) {
+        RiskScore riskScoreEntity = buildRiskScore(customer_id);
+
+        if (riskScoreEntity == null) {
+            return buildInsufficientDataResponse(customer_id);
+        }
+
+        return riskScoreMapper.toResponse(riskScoreEntity);
+    }
+
+    private RiskScore buildRiskScore(Long customer_id) {
         Customer customer = this.customerRepository.findById(customer_id)
                 .orElseThrow(
                         () -> new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
@@ -83,6 +111,12 @@ public class RiskScoreService {
 
         // get all SUCCESSFUL transcation in the LOOK_BACK_MONTH
         List<Transaction> transactions = getAllTranscations(customer_id);
+
+        // Without a long enough transaction history the factor calculations fall
+        // back to their neutral defaults
+        if (!hasEnoughHistory(customer_id)) {
+            return null;
+        }
 
         // get all factors
         Double ratio = calculateSpendingIncomeRatio(transactions);
@@ -121,36 +155,120 @@ public class RiskScoreService {
             correctRiskScoreBand = scoreBands.get(scoreBands.size() - 1);
         }
 
-        // save risk score
+        // A frozen account forces the band to HIGH regardless of other factors
+        if (hasFrozenAccount(customer_id)) {
+            correctRiskScoreBand = getHighBand();
+            riskScoreFactors.add(buildFrozenOverrideFactor());
+            log.debug("frozen account override applied for customer {}", customer_id);
+        }
+
         RiskScore riskScoreEntity = new RiskScore();
         riskScoreEntity.setVersion(riskScoreRules.getVersion());
         riskScoreEntity.setScore(riskScore);
-        riskScoreEntity.setBand(correctRiskScoreBand.getLevel());
-        riskScoreEntity.setStatus(RiskScoreStatus.OK);
+        riskScoreEntity.setRiskLevel(correctRiskScoreBand.getLevel());
+        riskScoreEntity.setCalculateStatus(RiskScoreStatus.OK);
         try {
             riskScoreEntity.setFactors(objectMapper.writeValueAsString(riskScoreFactors));
         } catch (JacksonException e) {
             throw new IllegalStateException("Failed to serialize risk score factor", e);
         }
         riskScoreEntity.setCustomer(customer);
-        riskScoreRepository.save(riskScoreEntity);
 
-        // return riskScoreResponse
-        RiskScoreResponse riskScoreResponse = new RiskScoreResponse();
-        riskScoreResponse.setCustomerId(customer_id);
-        riskScoreResponse.setScore(riskScore);
-        riskScoreResponse.setLevel(correctRiskScoreBand.getLevel());
-        riskScoreResponse.setExplain(correctRiskScoreBand.getExplain());
-        riskScoreResponse.setStatus(RiskScoreStatus.OK);
-        riskScoreResponse.setFactors(riskScoreFactors);
-        riskScoreResponse.setCalculatedAt(riskScoreEntity.getCalculatedAt());
-
-        return riskScoreResponse;
-
+        return riskScoreEntity;
     }
 
     public RiskScoreResponse getRiskScoreById(Long customer_id, CustomUserPrincipal principal) {
-        return null;
+        if (!this.customerRepository.existsById(customer_id)) {
+            throw new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
+                    Map.of("customer_id", customer_id));
+        }
+
+        RiskScore recentRiskScore = this.riskScoreRepository
+                .findFirstByCustomerCustomerIdOrderByCalculatedAtDesc(customer_id)
+                .orElseThrow(() -> new NotFoundException("RISK_SCORE_NOT_FOUND", "Customer doesn't have risk score yet",
+                        Map.of("customer_id", customer_id)));
+
+        return riskScoreMapper.toResponse(recentRiskScore);
+    }
+
+    public List<RiskScoreResponse> getRiskScoreHistory(Long customer_id) {
+        if (!this.customerRepository.existsById(customer_id)) {
+            throw new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found",
+                    Map.of("customer_id", customer_id));
+        }
+
+        List<RiskScore> scoreHistory = this.riskScoreRepository
+                .findAllByCustomerCustomerIdOrderByCalculatedAtDesc(customer_id)
+                .orElseThrow(() -> new NotFoundException("RISK_SCORE_NOT_FOUND", "Customer doesn't have risk score yet",
+                        Map.of("customer_id", customer_id)));
+
+        return scoreHistory.stream().map(record -> riskScoreMapper.toResponse(record)).toList();
+    }
+
+    // check if the customer's transcation history is long enough
+    // if not, the risk assessment is not meaningful
+    private boolean hasEnoughHistory(Long customer_id) {
+        Instant earliest = this.transactionRepository.findEarliestTimestampForCustomer(customer_id);
+        if (earliest == null) {
+            return false;
+        }
+
+        int minMonths = riskScoreRules.getInsufficientConditions().getMinMonths();
+        Instant threshold = LocalDate.now(ZoneOffset.UTC).minusMonths(minMonths)
+                .atStartOfDay().toInstant(ZoneOffset.UTC);
+
+        return !earliest.isAfter(threshold);
+    }
+
+    /**
+     * Scenario contract: status is INSUFFICIENT_DATA, score/level/explain are left
+     * null so they are omitted from the payload, and the failure is identified by
+     * a stable code rather than an ad-hoc string. Nothing is persisted — there is
+     * no score to record.
+     */
+    private RiskScoreResponse buildInsufficientDataResponse(Long customer_id) {
+        log.debug("insufficient transaction history for customer {}", customer_id);
+
+        RiskScoreResponse response = new RiskScoreResponse();
+        response.setCustomerId(customer_id);
+        response.setCalculateStatus(RiskScoreStatus.INSUFFICIENT_DATA);
+        response.setCode("RISK_SCORE_INSUFFICIENT_DATA");
+        response.setMessage("Not enough transaction history to calculate a risk score.");
+        response.setCalculatedAt(Instant.now());
+        return response;
+    }
+
+    private boolean hasFrozenAccount(Long customer_id) {
+        return this.accountRepository
+                .existsByCustomerCustomerIdAndDeletedAtIsNullAndStatus(customer_id, AccountStatus.FROZEN);
+    }
+
+    /**
+     * The HIGH band as configured in risk-score-rules.yaml. Resolved by level
+     * rather than by position so reordering the bands cannot silently change
+     * which band the override lands on.
+     */
+    private RiskScoreBand getHighBand() {
+        return riskScoreRules.getRiskScoreBands().stream()
+                .filter(b -> RiskScoreLevel.HIGH == b.getLevel())
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No HIGH band configured in risk score rules; cannot apply frozen account override"));
+    }
+
+    /**
+     * Records the override as a triggered factor so it is visible in the response
+     * and in the persisted factors JSON. Contribution is zero: the override
+     * changes the band, not the weighted-sum score.
+     */
+    private RiskScoreFactor buildFrozenOverrideFactor() {
+        RiskScoreFactor factor = new RiskScoreFactor();
+        factor.setDataElement(RiskScoreDataElement.FROZEN_ACCOUNT_OVERRIDE);
+        factor.setWeight(0.0);
+        factor.setContribution(0.0);
+        factor.setExplanation("Account frozen; risk band forced to HIGH");
+        factor.setValid(true);
+        return factor;
     }
 
     private Double calculateSpendingIncomeRatio(List<Transaction> transcations) {
@@ -272,7 +390,7 @@ public class RiskScoreService {
         factor.setWeight(weight);
         factor.setSubscore(correctBand.getScore());
         factor.setContribution(contribution);
-        factor.setExplanation(correctBand.getMeaning());
+        factor.setExplanation(correctBand.getExplain());
         factor.setValid(true);
         return factor;
     }
