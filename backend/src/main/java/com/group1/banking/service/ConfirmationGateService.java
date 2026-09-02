@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
@@ -61,7 +62,12 @@ public class ConfirmationGateService {
         entity.setToken(UUID.randomUUID().toString());
         entity.setCustomerId(customerId);
         entity.setActionType(actionType);
-        entity.setParametersJson(objectMapper.writeValueAsString(parameters));
+        try {
+            entity.setParametersJson(objectMapper.writeValueAsString(parameters));
+        } catch (JacksonException ex) {
+            throw new IllegalStateException(
+                    "Failed to serialize agent action parameters for customer " + customerId, ex);
+        }
         entity.setHumanSummary(humanSummary);
         entity.setStatus(PendingAgentActionStatus.PENDING);
         entity.setExpiresAt(LocalDateTime.now().plusMinutes(TTL_MINUTES));

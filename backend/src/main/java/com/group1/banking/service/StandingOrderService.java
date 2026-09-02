@@ -187,7 +187,7 @@ public class StandingOrderService {
  
         RoleName actor2 = resolveRole(caller).equalsIgnoreCase("ADMIN")
                 ? RoleName.ADMIN : RoleName.CUSTOMER;
-        auditService.log(AuditEventType.STANDING_ORDER_CREATE,
+        auditService.log(AuditEventType.STANDING_ORDER_LIST,
                 "standing-orders",
                 actor2,
                 caller.getUserId().toString(),

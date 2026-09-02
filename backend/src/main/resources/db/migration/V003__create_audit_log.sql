@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS audit_log (
   timestamp TIMESTAMP NOT NULL
 );
 
+-- Repair databases created before event_type was added to audit_log.
+ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS event_type VARCHAR(60) DEFAULT 'OTHER';
+
 CREATE INDEX IF NOT EXISTS idx_al_actor_id ON audit_log(actor_id);
 CREATE INDEX IF NOT EXISTS idx_al_subject ON audit_log(subject_type, subject_id);
 CREATE INDEX IF NOT EXISTS idx_al_timestamp ON audit_log(timestamp);

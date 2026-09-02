@@ -45,3 +45,4 @@ spec_frontend.md
 vite.config.js
 .env
 backend/data/
+digitalbankdb.mv.db

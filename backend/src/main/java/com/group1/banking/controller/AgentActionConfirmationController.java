@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -60,7 +61,13 @@ public class AgentActionConfirmationController {
     }
 
     private OperationResult executeTransfer(PendingAgentActionEntity resolved) {
-        TransferRequest request = objectMapper.readValue(resolved.getParametersJson(), TransferRequest.class);
+        TransferRequest request;
+        try {
+            request = objectMapper.readValue(resolved.getParametersJson(), TransferRequest.class);
+        } catch (JacksonException ex) {
+            throw new IllegalStateException(
+                    "Failed to deserialize stored agent action parameters for token " + resolved.getToken(), ex);
+        }
         return monetaryOperationService.transfer(request, resolved.getToken());
     }
 

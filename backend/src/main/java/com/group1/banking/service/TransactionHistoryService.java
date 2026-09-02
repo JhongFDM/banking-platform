@@ -121,7 +121,7 @@ public class TransactionHistoryService {
                 } catch (Exception ex) {
                     actorRole = RoleName.CUSTOMER;
                 }
-                auditService.log(AuditEventType.fromString("TRANSACTION_HISTORY_FAILED"),
+                auditService.log(AuditEventType.TRANSACTION_HISTORY_DENIED,
                             "transaction-history",
                             actorRole,
                             caller.getUserId(),
@@ -148,7 +148,7 @@ public class TransactionHistoryService {
         } catch (Exception ex) {
             actorRole2 = com.group1.banking.enums.RoleName.CUSTOMER;
         }
-        auditService.log(com.group1.banking.entity.AuditEventType.fromString("TRANSACTION_HISTORY"),
+        auditService.log(com.group1.banking.entity.AuditEventType.TRANSACTION_HISTORY_VIEWED,
             "transaction-history",
             actorRole2,
             caller.getUserId(),

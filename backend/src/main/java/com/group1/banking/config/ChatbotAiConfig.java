@@ -153,10 +153,15 @@ public class ChatbotAiConfig {
      */
     static ToolCallbackProvider withToolTracking(ToolCallbackProvider provider,
                                                            ToolSelectionTracker toolSelectionTracker) {
-        ToolCallback[] tracked = Arrays.stream(provider.getToolCallbacks())
+        // Lazy: provider.getToolCallbacks() is not invoked here at bean-construction
+        // time. Calling it eagerly would force the MCP client to connect during
+        // application startup, defeating spring.ai.mcp.client.initialized=false and
+        // the "backend starts even if the MCP rates server is down" requirement.
+        // The wrapping happens only when something (the ChatClient, per request)
+        // actually calls getToolCallbacks() on the returned provider.
+        return () -> Arrays.stream(provider.getToolCallbacks())
                 .map(callback -> (ToolCallback) new ToolTrackingCallback(callback, toolSelectionTracker))
                 .toArray(ToolCallback[]::new);
-        return ToolCallbackProvider.from(tracked);
     }
 
     /**
