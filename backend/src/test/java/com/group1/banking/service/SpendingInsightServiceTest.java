@@ -88,7 +88,7 @@ class SpendingInsightServiceTest {
         when(accountRepository.findById(1001L)).thenReturn(Optional.of(account));
         when(transactionQueryRepository.findEligibleForInsights(anyLong(), any(), any(), any(), any()))
                 .thenReturn(List.of());
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     // ===== getInsights() TESTS =====

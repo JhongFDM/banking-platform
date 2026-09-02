@@ -21,8 +21,12 @@ import com.group1.banking.config.ChatbotAiConfig;
 
 /**
  * Seeds the pgvector knowledge base from the curated savings articles under
- * {@code resources/knowledge-base/} on startup. Idempotent: skips ingestion if the
- * vector table already has content, so restarts don't duplicate entries.
+ * {@code resources/knowledge-base/} on startup. Idempotent per source file: each
+ * article is only ingested if no row for its filename (the "source" metadata key)
+ * already exists in the vector table, so adding a brand-new article ingests just that
+ * article on the next startup rather than being skipped because the table already has
+ * unrelated content in it - and re-ingesting an already-seeded article never happens,
+ * so restarts don't duplicate entries either.
  */
 @Component
 public class KnowledgeBaseIngestionRunner implements ApplicationRunner {
@@ -42,11 +46,6 @@ public class KnowledgeBaseIngestionRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         try {
-            if (alreadyIngested()) {
-                log.info("Savings knowledge base already ingested; skipping seed on startup.");
-                return;
-            }
-
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
             Resource[] resources = resolver.getResources(KNOWLEDGE_BASE_LOCATION_PATTERN);
 
@@ -55,10 +54,26 @@ public class KnowledgeBaseIngestionRunner implements ApplicationRunner {
                 return;
             }
 
+            List<Resource> newResources = new ArrayList<>();
+            int alreadyIngestedCount = 0;
+            for (Resource resource : resources) {
+                if (isAlreadyIngested(resource.getFilename())) {
+                    alreadyIngestedCount++;
+                } else {
+                    newResources.add(resource);
+                }
+            }
+
+            if (newResources.isEmpty()) {
+                log.info("Savings knowledge base: all {} article(s) already ingested; "
+                        + "nothing new to seed on startup.", alreadyIngestedCount);
+                return;
+            }
+
             TokenTextSplitter splitter = new TokenTextSplitter();
             List<Document> chunks = new ArrayList<>();
 
-            for (Resource resource : resources) {
+            for (Resource resource : newResources) {
                 TextReader reader = new TextReader(resource);
                 reader.getCustomMetadata().put("source", resource.getFilename());
                 reader.getCustomMetadata().put("type", "savings-knowledge-base");
@@ -67,19 +82,28 @@ public class KnowledgeBaseIngestionRunner implements ApplicationRunner {
             }
 
             vectorStore.add(chunks);
-            log.info("Ingested {} chunks from {} savings knowledge base articles.",
-                    chunks.size(), resources.length);
+            log.info("Ingested {} chunk(s) from {} new savings knowledge base article(s) "
+                    + "({} already ingested and left untouched).",
+                    chunks.size(), newResources.size(), alreadyIngestedCount);
         } catch (Exception ex) {
             // Non-fatal: the chatbot degrades to structured-data-only / fallback
             // responses if the knowledge base couldn't be seeded, rather than
             // failing application startup.
-            log.error("Failed to seed savings knowledge base; chatbot will run without it until this is resolved.", ex);
+            log.error("Failed to seed savings knowledge base; chatbot will run without the "
+                    + "missing article(s) until this is resolved.", ex);
         }
     }
 
-    private boolean alreadyIngested() {
+    /**
+     * Per-file dedupe check: the "source" metadata key (set to the article's filename
+     * below) is the dedupe key, matching data-model.md. Uses the {@code ->>} JSON text
+     * extraction operator, which Postgres supports on the vector store's {@code json}
+     * metadata column the same as it does on {@code jsonb}.
+     */
+    private boolean isAlreadyIngested(String sourceFilename) {
         Integer count = chatbotVectorJdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM " + ChatbotAiConfig.KNOWLEDGE_BASE_TABLE, Integer.class);
+                "SELECT COUNT(*) FROM " + ChatbotAiConfig.KNOWLEDGE_BASE_TABLE + " WHERE metadata->>'source' = ?",
+                Integer.class, sourceFilename);
         return count != null && count > 0;
     }
 }

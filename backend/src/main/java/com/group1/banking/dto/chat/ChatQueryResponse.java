@@ -21,6 +21,9 @@ public class ChatQueryResponse {
     @JsonProperty("blocked")
     private boolean blocked;
 
+    @JsonProperty("pending_confirmation")
+    private PendingConfirmationView pendingConfirmation;
+
     public ChatQueryResponse() {}
 
     public ChatQueryResponse(String response, List<String> basedOn, boolean limitedData, boolean blocked) {
@@ -41,4 +44,7 @@ public class ChatQueryResponse {
 
     public boolean isBlocked() { return blocked; }
     public void setBlocked(boolean blocked) { this.blocked = blocked; }
+
+    public PendingConfirmationView getPendingConfirmation() { return pendingConfirmation; }
+    public void setPendingConfirmation(PendingConfirmationView pendingConfirmation) { this.pendingConfirmation = pendingConfirmation; }
 }

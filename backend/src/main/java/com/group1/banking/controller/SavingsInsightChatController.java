@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,6 +28,9 @@ import com.group1.banking.service.impl.SavingsInsightChatService;
 @PreAuthorize("isAuthenticated()")
 public class SavingsInsightChatController {
 
+    private static final String DEFAULT_ACTOR_ROLE = "UNKNOWN";
+    private static final String ROLE_PREFIX = "ROLE_";
+
     private final SavingsInsightChatService savingsInsightChatService;
 
     public SavingsInsightChatController(SavingsInsightChatService savingsInsightChatService) {
@@ -38,7 +42,9 @@ public class SavingsInsightChatController {
             @RequestBody @Valid ChatQueryRequest request,
             @AuthenticationPrincipal CustomUserPrincipal principal) {
         CustomUserPrincipal caller = extractPrincipal(principal);
-        ChatQueryResponse response = savingsInsightChatService.ask(caller.getCustomerId(), request.getMessage());
+        String actorRole = extractRole(caller);
+        ChatQueryResponse response =
+                savingsInsightChatService.ask(caller.getCustomerId(), actorRole, request.getMessage());
         return ResponseEntity.ok(response);
     }
 
@@ -47,5 +53,18 @@ public class SavingsInsightChatController {
             throw new PermissionDeniedException("AUTHENTICATION");
         }
         return principal;
+    }
+
+    // Mirrors the "first role name" convention already used elsewhere (e.g.
+    // GicService, via user.getRoles()) for the shared audit trail's actorRole -
+    // strips the "ROLE_" prefix Spring Security adds so the stored value reads the
+    // same as audit rows written from other services.
+    private String extractRole(CustomUserPrincipal principal) {
+        return principal.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(authority -> authority.startsWith(ROLE_PREFIX))
+                .map(authority -> authority.substring(ROLE_PREFIX.length()))
+                .findFirst()
+                .orElse(DEFAULT_ACTOR_ROLE);
     }
 }

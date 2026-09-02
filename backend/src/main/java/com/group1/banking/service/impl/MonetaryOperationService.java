@@ -37,6 +37,10 @@ import com.group1.banking.repository.UserRepository;
 import com.group1.banking.security.AuthenticatedUser;
 import com.group1.banking.security.CustomUserPrincipal;
 import com.group1.banking.service.AuthService;
+import com.group1.banking.service.AuditService;
+import com.group1.banking.entity.AuditEventType;
+import com.group1.banking.entity.AuditOutcome;
+import com.group1.banking.enums.RoleName;
 
 @Service
 public class MonetaryOperationService {
@@ -52,16 +56,18 @@ public class MonetaryOperationService {
 	private final AuthService authorizationService;
 	private final JsonMapper objectMapper;
 	private final UserRepository userRepository;
+	private final AuditService auditService;
 
 	public MonetaryOperationService(AccountRepository accountRepository, TransactionRepository transactionRepository,
 			IdempotencyRecordRepository idempotencyRecordRepository, AuthService authorizationService,
-			JsonMapper objectMapper, UserRepository userRepository) {
+			JsonMapper objectMapper, UserRepository userRepository, AuditService auditService) {
 		this.accountRepository = accountRepository;
 		this.transactionRepository = transactionRepository;
 		this.idempotencyRecordRepository = idempotencyRecordRepository;
 		this.authorizationService = authorizationService;
 		this.objectMapper = objectMapper;
 		this.userRepository = userRepository;
+		this.auditService = auditService;
 	}
 
 	
@@ -122,9 +128,20 @@ public class MonetaryOperationService {
 	                        );
 
 	                        accountRepository.save(account);
-	                        transactionRepository.save(transaction);
+							transactionRepository.save(transaction);
 
-	                        result = ok(new MonetaryOperationResponse(
+							// Audit: deposit made
+							RoleName actorRoleEnum = isAdmin ? RoleName.ADMIN : RoleName.CUSTOMER;
+							auditService.log(AuditEventType.DEPOSIT_MADE,
+								"monetary",
+								actorRoleEnum,
+								userId.toString(),
+								"ACCOUNT",
+								String.valueOf(accountId),
+								AuditOutcome.SUCCESS,
+								"tx:" + transaction.getTransactionId() + ",amount:" + amount.toPlainString());
+
+							result = ok(new MonetaryOperationResponse(
 	                                "Deposit completed successfully",
 	                                AccountResponse.from(account),
 	                                TransactionResponse.from(transaction)
@@ -213,9 +230,20 @@ public class MonetaryOperationService {
 	                        );
 
 	                        accountRepository.save(account);
-	                        transactionRepository.save(transaction);
+							transactionRepository.save(transaction);
 
-	                        result = ok(new MonetaryOperationResponse(
+							// Audit: withdrawal made (success)
+							RoleName actorRoleEnum = isAdmin ? RoleName.ADMIN : RoleName.CUSTOMER;
+							auditService.log(AuditEventType.WITHDRAWAL_MADE,
+								"monetary",
+								actorRoleEnum,
+								userId.toString(),
+								"ACCOUNT",
+								String.valueOf(accountId),
+								AuditOutcome.SUCCESS,
+								"tx:" + transaction.getTransactionId() + ",amount:" + amount.toPlainString());
+
+							result = ok(new MonetaryOperationResponse(
 	                                "Withdrawal completed successfully",
 	                                AccountResponse.from(account),
 	                                TransactionResponse.from(transaction)
@@ -338,10 +366,21 @@ public class MonetaryOperationService {
 	            null,
 	            idempotencyKey);
 
-	    accountRepository.save(from);
-	    accountRepository.save(to);
-	    transactionRepository.save(debit);
-	    transactionRepository.save(credit);
+		accountRepository.save(from);
+		accountRepository.save(to);
+		transactionRepository.save(debit);
+		transactionRepository.save(credit);
+
+		// Audit: funds transferred
+		RoleName actorRoleEnum = isAdmin ? RoleName.ADMIN : RoleName.CUSTOMER;
+		auditService.log(AuditEventType.FUNDS_TRANSFERRED,
+			"transfers",
+			actorRoleEnum,
+			userId.toString(),
+			"ACCOUNT",
+			from.getAccountId() + "->" + to.getAccountId(),
+			AuditOutcome.SUCCESS,
+			"debitTx:" + debit.getTransactionId() + ",creditTx:" + credit.getTransactionId() + ",amount:" + amount.toPlainString());
 
 	    return persistAndReturn(storageKey, idempotencyKey, userId, TRANSFER,
 	            ok(new TransferResponse(

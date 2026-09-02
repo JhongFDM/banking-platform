@@ -192,8 +192,8 @@ class MonthlyStatementServiceTest {
 
         assertThat(result).isEqualTo(fakePdf);
         verify(exportCacheRepository).save(any(ExportCacheEntity.class));
-        verify(auditService).log(anyString(), anyString(), eq("STATEMENT_GENERATED"), eq("STATEMENT"),
-                anyString(), eq("SUCCESS"));
+        verify(auditService).log(eq(com.group1.banking.entity.AuditEventType.STATEMENT_DOWNLOADED), anyString(), eq(RoleName.CUSTOMER), anyString(),
+                eq("STATEMENT"), anyString(), eq(com.group1.banking.entity.AuditOutcome.SUCCESS), any());
     }
 
     @Test

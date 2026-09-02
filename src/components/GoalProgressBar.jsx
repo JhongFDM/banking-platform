@@ -31,6 +31,20 @@ const GoalProgressBar = ({
       ? progressPercentage
       : parseFloat(progressPercentage) || 0;
 
+  // Coerce incoming values to numbers when possible (API may send strings)
+  const balanceNum =
+    typeof currentBalance === "number"
+      ? currentBalance
+      : parseFloat(currentBalance) || 0;
+  const targetNum =
+    typeof targetAmount === "number"
+      ? targetAmount
+      : parseFloat(targetAmount) || 0;
+  const progressNum =
+    typeof progressPercentage === "number"
+      ? progressPercentage
+      : parseFloat(progressPercentage) || 0;
+
   // Cap progress at 100%
   // Prefer calculating progress client-side from balances when available so
   // we don't display 100% due to unrelated rounding of a server-provided value.
@@ -68,6 +82,11 @@ const GoalProgressBar = ({
       targetNum > 0 ? balanceNum >= targetNum : progressNum >= 100;
 
     if (isComplete) return "var(--color-success, #28a745)";
+    // Use actual balances if available to decide completion state.
+    const isComplete =
+      targetNum > 0 ? balanceNum >= targetNum : progressNum >= 100;
+
+    if (isComplete) return "var(--color-success, #28a745)";
     if (displayProgress >= 75) return "var(--color-warning, #ffc107)";
     if (displayProgress >= 50) return "var(--color-info, #17a2b8)";
     return "var(--color-primary, #007bff)";
@@ -81,6 +100,7 @@ const GoalProgressBar = ({
     <div className={`goal-progress-container ${getThemeClass()}`}>
       <div className="progress-info">
         <span className="progress-label">Progress</span>
+        <span className="progress-percentage">{percentageText}%</span>
         <span className="progress-percentage">{percentageText}%</span>
       </div>
 
@@ -114,6 +134,9 @@ const GoalProgressBar = ({
 };
 
 GoalProgressBar.propTypes = {
+  progressPercentage: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  currentBalance: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  targetAmount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   progressPercentage: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   currentBalance: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   targetAmount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
