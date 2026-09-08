@@ -7,14 +7,22 @@ const mutationState = {
   mutate: vi.fn()
 };
 
+const confirmMutationState = {
+  isPending: false,
+  mutate: vi.fn()
+};
+
 vi.mock('../../hooks/useSavingsChat', () => ({
-  useSavingsChat: () => mutationState
+  useSavingsChat: () => mutationState,
+  useConfirmAgentAction: () => confirmMutationState
 }));
 
 describe('ChatWidget', () => {
   beforeEach(() => {
     mutationState.isPending = false;
     mutationState.mutate.mockReset();
+    confirmMutationState.isPending = false;
+    confirmMutationState.mutate.mockReset();
   });
 
   it('is collapsed to just the launcher button by default', () => {
@@ -108,5 +116,68 @@ describe('ChatWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: /open savings assistant chat/i }));
     expect(screen.getByLabelText('Message')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+  });
+
+  it('renders a confirmation card when the response includes pending_confirmation, and confirms it', () => {
+    mutationState.mutate.mockImplementation((text, { onSuccess }) => {
+      onSuccess({
+        response: "I've prepared that transfer for you to confirm.",
+        based_on: [],
+        limited_data: false,
+        blocked: false,
+        pending_confirmation: {
+          token: 'tok-1',
+          action_type: 'TRANSFER',
+          summary: 'Transfer $50.00 from your CHECKING account (#1) to your SAVINGS account (#2).',
+          expires_at: '2026-08-26T12:05:00'
+        }
+      });
+    });
+    confirmMutationState.mutate.mockImplementation((token, { onSuccess }) => {
+      onSuccess({ message: 'Transfer complete' });
+    });
+
+    render(<ChatWidget />);
+    fireEvent.click(screen.getByRole('button', { name: /open savings assistant chat/i }));
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'transfer $50 from checking to savings' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    expect(screen.getByText(/Transfer \$50\.00 from your CHECKING account/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+
+    expect(confirmMutationState.mutate).toHaveBeenCalledWith(
+      'tok-1',
+      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) })
+    );
+    expect(screen.getByText('Transfer complete')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
+  });
+
+  it('dismisses a pending confirmation without calling the confirm endpoint', () => {
+    mutationState.mutate.mockImplementation((text, { onSuccess }) => {
+      onSuccess({
+        response: "I've prepared that transfer for you to confirm.",
+        based_on: [],
+        limited_data: false,
+        blocked: false,
+        pending_confirmation: {
+          token: 'tok-2',
+          action_type: 'TRANSFER',
+          summary: 'Transfer $10.00 from your CHECKING account (#1) to your SAVINGS account (#2).',
+          expires_at: '2026-08-26T12:05:00'
+        }
+      });
+    });
+
+    render(<ChatWidget />);
+    fireEvent.click(screen.getByRole('button', { name: /open savings assistant chat/i }));
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'transfer $10 from checking to savings' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+
+    fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));
+
+    expect(confirmMutationState.mutate).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
   });
 });

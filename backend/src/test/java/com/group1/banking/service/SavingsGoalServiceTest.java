@@ -198,7 +198,7 @@ class SavingsGoalServiceTest {
             g.setUpdatedAt(Instant.now());
             return g;
         });
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
 
         SavingsGoalRequest request = new SavingsGoalRequest("Travel", new BigDecimal("5000.00"), LocalDate.now().plusDays(180));
         SavingsGoalResponse response = savingsGoalService.createGoal(1L, 100L, request);
@@ -222,7 +222,7 @@ class SavingsGoalServiceTest {
             g.setGoalId(1L); g.setCreatedAt(Instant.now()); g.setUpdatedAt(Instant.now());
             return g;
         });
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
 
         SavingsGoalRequest request = new SavingsGoalRequest("Travel", new BigDecimal("5000.00"), LocalDate.now().plusDays(90));
         SavingsGoalResponse response = savingsGoalService.createGoal(1L, 100L, request);
@@ -241,7 +241,7 @@ class SavingsGoalServiceTest {
             g.setGoalId(1L); g.setCreatedAt(Instant.now()); g.setUpdatedAt(Instant.now());
             return g;
         });
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
 
         SavingsGoalRequest request = new SavingsGoalRequest("Travel", new BigDecimal("5000.00"), LocalDate.now().plusDays(90));
         SavingsGoalResponse response = savingsGoalService.createGoal(1L, 100L, request);
@@ -261,7 +261,7 @@ class SavingsGoalServiceTest {
             g.setGoalId(1L); g.setCreatedAt(Instant.now()); g.setUpdatedAt(Instant.now());
             return g;
         });
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
 
         SavingsGoalRequest request = new SavingsGoalRequest("Travel", new BigDecimal("5000.00"), LocalDate.now().plusDays(90));
         SavingsGoalResponse response = savingsGoalService.createGoal(1L, 100L, request);
@@ -324,7 +324,7 @@ class SavingsGoalServiceTest {
         account.setBalance(new BigDecimal("1000.00"));
         when(savingsGoalRepository.findByGoalIdAndCustomerId(1L, 1L)).thenReturn(Optional.of(existingGoal));
         when(savingsGoalRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
 
         // Change target from 5000 to 2000 (same 1000 balance → now 50%)
         SavingsGoalRequest request = new SavingsGoalRequest("Travel", new BigDecimal("2000.00"), LocalDate.now().plusDays(90));
@@ -340,7 +340,7 @@ class SavingsGoalServiceTest {
     void deleteGoal_setsDeletedAt_doesNotHardDelete() {
         when(savingsGoalRepository.findByGoalIdAndCustomerId(1L, 1L)).thenReturn(Optional.of(existingGoal));
         when(savingsGoalRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any());
+        doNothing().when(auditService).log(any(), any(), any(), any(), any(), any(), any(), any());
 
         savingsGoalService.deleteGoal(1L, 1L);
 

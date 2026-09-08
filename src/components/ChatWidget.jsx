@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSavingsChat } from '../hooks/useSavingsChat';
+import { useSavingsChat, useConfirmAgentAction } from '../hooks/useSavingsChat';
 import { mapAxiosError } from '../api/axiosClient';
 
 const WELCOME_MESSAGE = {
@@ -29,6 +29,7 @@ export function ChatWidget() {
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const chatMutation = useSavingsChat();
+  const confirmMutation = useConfirmAgentAction();
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -62,7 +63,8 @@ export function ChatWidget() {
             text: data?.response || "I don't have a response for that right now.",
             basedOn: data?.based_on || [],
             limitedData: Boolean(data?.limited_data),
-            blocked: Boolean(data?.blocked)
+            blocked: Boolean(data?.blocked),
+            pendingConfirmation: data?.pending_confirmation || null
           }
         ]);
       },
@@ -82,6 +84,32 @@ export function ChatWidget() {
         ]);
       }
     });
+  }
+
+  function handleConfirmAction(messageId, token) {
+    confirmMutation.mutate(token, {
+      onSuccess: (data) => {
+        setMessages((current) => current.map((message) =>
+          message.id === messageId
+            ? { ...message, pendingConfirmation: null, confirmedResultText: data?.message || 'This action was completed.' }
+            : message
+        ));
+      },
+      onError: (error) => {
+        const mapped = mapAxiosError(error);
+        setMessages((current) => current.map((message) =>
+          message.id === messageId
+            ? { ...message, pendingConfirmation: { ...message.pendingConfirmation, errorText: mapped.message || 'This confirmation could not be completed.' } }
+            : message
+        ));
+      }
+    });
+  }
+
+  function handleDismissAction(messageId) {
+    setMessages((current) => current.map((message) =>
+      message.id === messageId ? { ...message, pendingConfirmation: null } : message
+    ));
   }
 
   return (
@@ -122,6 +150,34 @@ export function ChatWidget() {
                   )}
                   {message.role === 'assistant' && message.limitedData && !message.blocked && !message.isError && (
                     <p className="chat-bubble-note">General guidance — limited personal data used.</p>
+                  )}
+                  {message.role === 'assistant' && message.confirmedResultText && (
+                    <p className="chat-bubble-note">{message.confirmedResultText}</p>
+                  )}
+                  {message.role === 'assistant' && message.pendingConfirmation && (
+                    <div className="chat-confirmation-card">
+                      <p className="chat-confirmation-summary">{message.pendingConfirmation.summary}</p>
+                      {message.pendingConfirmation.errorText && (
+                        <p className="chat-confirmation-error">{message.pendingConfirmation.errorText}</p>
+                      )}
+                      <div className="chat-confirmation-actions">
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmAction(message.id, message.pendingConfirmation.token)}
+                          disabled={confirmMutation.isPending}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          className="chat-confirmation-dismiss"
+                          onClick={() => handleDismissAction(message.id)}
+                          disabled={confirmMutation.isPending}
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

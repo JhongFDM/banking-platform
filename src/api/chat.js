@@ -10,3 +10,13 @@ export async function askSavingsInsight(message) {
   const response = await accountApiClient.post('/api/chat/savings-insights', { message });
   return response.data;
 }
+
+/**
+ * Confirms (and executes) a pending agent-proposed action, e.g. a transfer the
+ * chatbot prepared but did not carry out (AC4). The model never has a path to this
+ * endpoint - only an explicit customer action in the chat UI calls it.
+ */
+export async function confirmAgentAction(token) {
+  const response = await accountApiClient.post(`/api/chat/confirmations/${token}`);
+  return response.data;
+}
