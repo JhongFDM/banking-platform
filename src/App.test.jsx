@@ -15,6 +15,7 @@ const authContext = {
     accessToken: 'token'
   },
   isAdmin: false,
+  isComplianceObserver: false,
   isAuthenticated: true,
   logout: mockLogout
 };
@@ -80,6 +81,7 @@ describe('Navbar and Sub-Navbar (AppLayout)', () => {
       accessToken: 'token'
     };
     authContext.isAdmin = false;
+    authContext.isComplianceObserver = false;
     authContext.isAuthenticated = true;
     accountsQueryState.isLoading = false;
     accountsQueryState.data = [];
@@ -132,6 +134,24 @@ describe('Navbar and Sub-Navbar (AppLayout)', () => {
   });
 
   describe('authenticated user — sub-navbar items', () => {
+    it('shows only the audit review link for a compliance observer', () => {
+      authContext.isComplianceObserver = true;
+      authContext.authState = {
+        ...authContext.authState,
+        customerId: null,
+        roles: ['COMPLIANCE_AUDIT_OBSERVER']
+      };
+
+      renderApp('/audit-observer');
+
+      expect(screen.getByRole('link', { name: 'Audit Review' })).toHaveAttribute(
+        'href',
+        '/audit-observer'
+      );
+      expect(screen.queryByRole('button', { name: 'Overview' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'My Accounts' })).not.toBeInTheDocument();
+    });
+
     it('renders all feature sub-navbar buttons when the user has accounts', () => {
       accountsQueryState.data = [{ accountId: 1, accountType: 'SAVINGS', status: 'ACTIVE', balance: '100.00' }];
       renderApp();

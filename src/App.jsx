@@ -10,6 +10,8 @@ import {
 } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import { AdminRoute } from "./auth/AdminRoute";
+import { AuditObserverRoute } from "./auth/AuditObserverRoute";
+import { ObserverRestrictedRoute } from "./auth/ObserverRestrictedRoute";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { ChatWidget } from "./components/ChatWidget";
 import { FeatureGuard } from "./components/FeatureGuard";
@@ -41,6 +43,7 @@ import { useTheme } from "./theme/ThemeContext";
 import voltioIcon from "./images/Voltio_icon.png";
 import voltioIconGreen from "./images/Voltio_icon_green.png";
 import { AdminRiskScorePage } from "./pages/AdminRiskScorePage";
+import ComplianceAuditObserverPage from "./pages/ComplianceAuditObserverPage";
 
 function getDefaultAuthenticatedRoute(authState) {
   const isAdmin =
@@ -49,6 +52,13 @@ function getDefaultAuthenticatedRoute(authState) {
 
   if (isAdmin) {
     return "/admin/customers";
+  }
+
+  if (
+    authState.roles.includes("COMPLIANCE_AUDIT_OBSERVER") ||
+    authState.roles.includes("ROLE_COMPLIANCE_AUDIT_OBSERVER")
+  ) {
+    return "/audit-observer";
   }
 
   if (authState.customerId) {
@@ -118,13 +128,14 @@ function getActiveAccountIdFromPath(pathname) {
 }
 
 function AppLayout() {
-  const { authState, isAdmin, isAuthenticated } = useAuth();
+  const { authState, isAdmin, isComplianceObserver, isAuthenticated } = useAuth();
   const { isClassic, toggleTheme } = useTheme();
   const customerId = authState.customerId;
   const location = useLocation();
   const navigate = useNavigate();
   // Admin-specific nav logic
   const isAdminUser = isAdmin;
+  const isAuditObserver = isComplianceObserver && !isAdmin;
   const isCustomersActive = location.pathname === "/admin/customers";
   const isCustomerAccountsActiveAdmin =
     isAdminUser && location.pathname === "/admin/accounts";
@@ -294,6 +305,15 @@ function AppLayout() {
                   Customers
                 </NavLink>
               </>
+            ) : isAuditObserver ? (
+              <NavLink
+                className={() =>
+                  `subnav-btn${pathname === "/audit-observer" ? " active" : ""}`
+                }
+                to="/audit-observer"
+              >
+                Audit Review
+              </NavLink>
             ) : (
               <>
                 <button
@@ -467,56 +487,65 @@ export default function App() {
               element={<AdminRiskScorePage />}
             />
           </Route>
-          <Route path="/customer/create" element={<CustomerCreatePage />} />
-          <Route
-            path="/customer/:customerId"
-            element={<CustomerDetailPage />}
-          />
-          <Route
-            path="/customer/:customerId/edit"
-            element={<CustomerEditPage />}
-          />
-          <Route path="/customer-profile" element={<CustomerProfilePage />} />
-          <Route
-            path="/customer/:customerId/accounts"
-            element={<AccountListPage />}
-          />
-          <Route
-            path="/customer/:customerId/accounts/create"
-            element={<CreateAccountPage />}
-          />
-          <Route path="/accounts/:accountId" element={<AccountDetailPage />} />
-          <Route
-            path="/accounts/:accountId/edit"
-            element={<AccountDetailPage />}
-          />
-          <Route
-            path="/accounts/:accountId/deposit"
-            element={<DepositPage />}
-          />
-          <Route
-            path="/accounts/:accountId/withdraw"
-            element={<WithdrawPage />}
-          />
-          <Route element={<FeatureGuard />}>
+          <Route element={<AuditObserverRoute />}>
+            <Route path="/audit-observer" element={<ComplianceAuditObserverPage />} />
             <Route
-              path="/accounts/:accountId/transactions"
-              element={<TransactionHistoryPage />}
-            />
-            <Route
-              path="/accounts/:accountId/standing-orders"
-              element={<StandingOrdersPage />}
-            />
-            <Route
-              path="/accounts/:accountId/statements"
-              element={<MonthlyStatementPage />}
-            />
-            <Route
-              path="/accounts/:accountId/insights"
-              element={<SpendingInsightsPage />}
+              path="/audit-observer/:customerId/risk-assessment"
+              element={<AdminRiskScorePage />}
             />
           </Route>
-          <Route path="/accounts/transfer" element={<TransferPage />} />
+          <Route element={<ObserverRestrictedRoute />}>
+            <Route path="/customer/create" element={<CustomerCreatePage />} />
+            <Route
+              path="/customer/:customerId"
+              element={<CustomerDetailPage />}
+            />
+            <Route
+              path="/customer/:customerId/edit"
+              element={<CustomerEditPage />}
+            />
+            <Route path="/customer-profile" element={<CustomerProfilePage />} />
+            <Route
+              path="/accounts/:accountId/edit"
+              element={<AccountDetailPage />}
+            />
+            <Route
+              path="/customer/:customerId/accounts"
+              element={<AccountListPage />}
+            />
+            <Route
+              path="/customer/:customerId/accounts/create"
+              element={<CreateAccountPage />}
+            />
+            <Route
+              path="/accounts/:accountId/deposit"
+              element={<DepositPage />}
+            />
+            <Route
+              path="/accounts/:accountId/withdraw"
+              element={<WithdrawPage />}
+            />
+            <Route element={<FeatureGuard />}>
+              <Route
+                path="/accounts/:accountId/transactions"
+                element={<TransactionHistoryPage />}
+              />
+              <Route
+                path="/accounts/:accountId/standing-orders"
+                element={<StandingOrdersPage />}
+              />
+              <Route
+                path="/accounts/:accountId/statements"
+                element={<MonthlyStatementPage />}
+              />
+              <Route
+                path="/accounts/:accountId/insights"
+                element={<SpendingInsightsPage />}
+              />
+            </Route>
+            <Route path="/accounts/transfer" element={<TransferPage />} />
+          </Route>
+          <Route path="/accounts/:accountId" element={<AccountDetailPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

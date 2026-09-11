@@ -13,7 +13,8 @@ import { calculateRiskScore } from "../api/riskAssessment";
 export function AdminRiskScorePage() {
   const navigate = useNavigate();
   const { customerId } = useParams();
-  const { isAdmin, rememberCustomerId } = useAuth();
+  const { isAdmin, isComplianceObserver, rememberCustomerId } = useAuth();
+  const canReviewAudit = isAdmin || isComplianceObserver;
   const [error, setError] = useState(null);
   const [infoMessage, setInfoMessage] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -28,7 +29,7 @@ export function AdminRiskScorePage() {
   const customerListQuery = useQuery({
     queryKey: ["customers"],
     queryFn: listCustomers,
-    enabled: isAdmin,
+    enabled: canReviewAudit,
   });
 
   const risksError = riskQuery.error
@@ -47,7 +48,11 @@ export function AdminRiskScorePage() {
     setError(null);
     setInfoMessage(null);
     rememberCustomerId(nextCustomerId);
-    navigate(`/admin/${nextCustomerId}/risk-assessment`);
+    navigate(
+      isComplianceObserver && !isAdmin
+        ? `/audit-observer/${nextCustomerId}/risk-assessment`
+        : `/admin/${nextCustomerId}/risk-assessment`,
+    );
   }
 
   const customerName = customerQuery.data?.name;
@@ -96,11 +101,11 @@ export function AdminRiskScorePage() {
                   : "Risk Assessment"}
               </h2>
               <p className="muted text-top-muted">
-                Review the customer's risk score history and recalculate on
-                demand.
+                Review the customer's risk score history and explanation.
+                {isAdmin ? " Recalculate on demand when permitted." : ""}
               </p>
             </div>
-            {customerId && !customerError ? (
+            {isAdmin && customerId && !customerError ? (
               <button
                 type="button"
                 onClick={handleRiskCalculation}
@@ -110,10 +115,10 @@ export function AdminRiskScorePage() {
               </button>
             ) : null}
           </div>
-          {isAdmin ? (
+          {canReviewAudit ? (
             <div className="field">
               <label htmlFor="risk-customer-switcher">
-                Admin Customer Switcher
+                Customer to review
               </label>
               <select
                 id="risk-customer-switcher"

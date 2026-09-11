@@ -48,13 +48,13 @@ public class CustomerController {
     }
 
     @GetMapping("/{customerId}")
-    @PreAuthorize("(hasAuthority('CUSTOMER_READ') and @ownershipService.canAccessCustomer(authentication, #customerId)) or hasRole('BANK_ADMINISTRATOR')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER') or (hasAuthority('CUSTOMER_READ') and @ownershipService.canAccessCustomer(authentication, #customerId))")
     public ResponseEntity<CustomerResponse> getCustomer(@PathVariable Long customerId) {
         return ResponseEntity.ok(customerService.getCustomer(customerId));
     }
     
     @GetMapping
-    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER')")
     public ResponseEntity<List<CustomerResponse>> getAllCustomers() {
         return ResponseEntity.ok(customerService.getAllCustomers());
     }
