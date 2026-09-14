@@ -26,7 +26,12 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     authState,
     isAuthenticated: Boolean(authState.accessToken) && (!authState.expiresAt || authState.expiresAt > Date.now()),
-    isAdmin: authState.roles.includes('BANK_ADMINISTRATOR') || authState.roles.includes('ROLE_BANK_ADMINISTRATOR'),
+    isAdmin: authState.roles.includes('ADMIN')
+      || authState.roles.includes('ROLE_ADMIN')
+      || authState.roles.includes('BANK_ADMINISTRATOR')
+      || authState.roles.includes('ROLE_BANK_ADMINISTRATOR'),
+    isComplianceObserver: authState.roles.includes('COMPLIANCE_AUDIT_OBSERVER')
+      || authState.roles.includes('ROLE_COMPLIANCE_AUDIT_OBSERVER'),
     completeLogin(authResponse, username) {
       const nextState = buildAuthenticatedState(authResponse, username);
       // Write to localStorage synchronously so the token is immediately
