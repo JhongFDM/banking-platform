@@ -61,7 +61,7 @@ export function LoginPage() {
   }
 
   return (
-    <section className="panel stack auth-panel-page">
+    <section className="panel stack auth-panel-page login-page">
       <div>
         <h2>Login</h2>
         <p className="muted">

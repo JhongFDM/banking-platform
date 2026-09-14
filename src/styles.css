@@ -13,6 +13,7 @@
 
   --text-primary: #f8fafc;
   --text-muted: #94a3b8;
+  --accent-foreground: #050816;
 
   --border: #26344d;
   --disabled: #475569;
@@ -47,6 +48,7 @@ body.theme-classic {
 
   --text-primary: #111827;
   --text-muted: #374151;
+  --accent-foreground: #ffffff;
   --border: #e5e7eb;
 
   --neon-primary: #15803d;
@@ -656,7 +658,7 @@ button {
   border-radius: 999px;
   padding: 0.9rem 1.2rem;
   background: var(--neon-primary);
-  color: var(--bg-primary);
+  color: var(--accent-foreground);
   cursor: pointer;
   box-shadow: var(--glow-primary);
   transition: transform var(--transition-ui), background var(--transition-ui), box-shadow var(--transition-ui), filter var(--transition-ui);
@@ -721,7 +723,7 @@ button:disabled {
   padding: 0.9rem 1.2rem;
   border-radius: 999px;
   background: var(--neon-primary);
-  color: var(--bg-primary);
+  color: var(--accent-foreground);
   text-decoration: none;
   box-shadow: var(--glow-primary);
   transition: transform var(--transition-ui), background var(--transition-ui), box-shadow var(--transition-ui), filter var(--transition-ui);
@@ -738,6 +740,29 @@ button:disabled {
   color: var(--text-primary);
   border: 1px solid var(--border);
   box-shadow: none;
+}
+
+body.theme-classic .button-link.subtle {
+  border-color: #9ca3af;
+}
+
+body.theme-classic .login-page .actions > button[type='submit'],
+body.theme-classic .login-page .actions > .button-link.subtle,
+body.theme-classic .navbar-actions > .button-link {
+  background: #ffffff;
+  color: #111827;
+  border-color: #d1d5db;
+  box-shadow: none;
+}
+
+body.theme-classic .login-page .actions > button[type='submit']:hover,
+body.theme-classic .login-page .actions > .button-link.subtle:hover,
+body.theme-classic .navbar-actions > .button-link:hover {
+  background: #ffffff;
+  border-color: #15803d;
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.28) inset, 0 0 12px rgba(21, 128, 61, 0.7), 0 0 28px rgba(21, 128, 61, 0.45);
+  filter: brightness(1.04);
+  transform: scale(1.02);
 }
 
 .inline-note {
@@ -767,6 +792,12 @@ button:disabled {
   background: rgba(255, 209, 102, 0.14);
   color: #ffe6a8;
   border: 1px solid rgba(255, 209, 102, 0.35);
+}
+
+body.theme-classic .banner.info {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
 }
 
 .code {
