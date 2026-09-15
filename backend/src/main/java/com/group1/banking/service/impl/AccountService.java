@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.group1.banking.util.AccountIdentifiers;
 import com.group1.banking.dto.customer.AccountResponse;
 import com.group1.banking.dto.customer.CreateAccountRequest;
 import com.group1.banking.dto.customer.UpdateAccountRequest;
@@ -104,7 +105,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public AccountResponse getAccount(Long accountId) {
         User user = getAuthenticatedUser();
-        Account account = isAdmin(user) ? loadAccount(accountId) : loadActiveAccount(accountId);
+        Account account = canReviewAudit(user) ? loadAccount(accountId) : loadActiveAccount(accountId);
         checkAuthorization(user, account.getCustomer().getCustomerId());
         return AccountResponse.from(account);
     }
@@ -116,7 +117,7 @@ public class AccountService {
             throw new NotFoundException("CUSTOMER_NOT_FOUND", "Customer not found", Map.of("customerId", customerId));
         }
         checkAuthorization(user, customerId);
-        List<Account> accounts = isAdmin(user)
+        List<Account> accounts = canReviewAudit(user)
                 ? accountRepository.findAllByCustomerCustomerIdAndDeletedAtIsNullAndStatusNot(customerId,
                         AccountStatus.CLOSED)
                 : accountRepository.findAllByCustomerCustomerIdAndDeletedAtIsNullAndStatus(customerId,
@@ -129,7 +130,9 @@ public class AccountService {
     @Transactional
     public AccountControlActionResponse freezeAccount(Long accountId, FreezeAccountRequest request) {
         User user = getAuthenticatedUser();
-        assertAdmin(user);
+        if (!canReviewAudit(user)) {
+            throw new ForbiddenException("FORBIDDEN", "Only admin users can view account control history");
+        }
         if (request == null || request.reason() == null || request.reason().isBlank()) {
             throw new BadRequestException("MISSING_FREEZE_REASON", "Freeze reason is required",
                     Map.of("field", "reason"));
@@ -246,7 +249,9 @@ public class AccountService {
     @Transactional(readOnly = true)
     public List<AccountResponse> listAllAccounts() {
         User user = getAuthenticatedUser();
-        assertAdmin(user);
+        if (!canReviewAudit(user)) {
+            throw new ForbiddenException("FORBIDDEN", "Only admin users can view all accounts");
+        }
         return accountRepository.findAllByDeletedAtIsNull()
                 .stream()
                 .map(AccountResponse::from)
@@ -256,7 +261,9 @@ public class AccountService {
     @Transactional(readOnly = true)
     public AccountControlHistoryResponse getControlHistory(Long accountId) {
         User user = getAuthenticatedUser();
-        assertAdmin(user);
+        if (!canReviewAudit(user)) {
+            throw new ForbiddenException("FORBIDDEN", "Only admin users can view account control history");
+        }
         loadAccount(accountId);
 
         List<AccountControlHistoryEventResponse> events = accountControlAuditService.getHistory(accountId)
@@ -520,11 +527,11 @@ public class AccountService {
     }
 
     private long nextAccountId() {
-        return accountRepository.count() + 1000;
+        return AccountIdentifiers.nextAccountId(accountRepository.count());
     }
 
     private String generateAccountNumber(long accountId) {
-        return String.format("ACC%010d", accountId);
+        return AccountIdentifiers.accountNumber(accountId);
     }
 
     private User getAuthenticatedUser() {
@@ -544,6 +551,12 @@ public class AccountService {
                 .anyMatch(r -> r.name().equalsIgnoreCase("BANK_ADMINISTRATOR") || r.name().equalsIgnoreCase("ROLE_BANK_ADMINISTRATOR"));
     }
 
+    private boolean canReviewAudit(User user) {
+        return isAdmin(user) || user.getRoles().stream()
+                .anyMatch(r -> r.name().equalsIgnoreCase("COMPLIANCE_AUDIT_OBSERVER")
+                        || r.name().equalsIgnoreCase("ROLE_COMPLIANCE_AUDIT_OBSERVER"));
+    }
+
     private void assertAdmin(User user) {
         if (!isAdmin(user)) {
             throw new ForbiddenException("FORBIDDEN", "Only admin users can perform this action");
@@ -555,7 +568,7 @@ public class AccountService {
     }
 
     private void checkAuthorization(User user, Long customerId) {
-        if (!isAdmin(user) && !user.getCustomerId().equals(customerId)) {
+        if (!isAdmin(user) && !canReviewAudit(user) && !user.getCustomerId().equals(customerId)) {
             throw new UnauthorisedException("UNAUTHORIZED", "You can only manage your own accounts.");
         }
     }

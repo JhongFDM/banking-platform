@@ -45,6 +45,7 @@ public class AccountController {
     }
 
     @PostMapping("/customers/{customerId}/accounts")
+    @PreAuthorize("hasAuthority('CUSTOMER_CREATE') or hasRole('BANK_ADMINISTRATOR')")
     @ResponseStatus(HttpStatus.CREATED)
     public AccountResponse createAccount(
             @PathVariable Long customerId,
@@ -53,7 +54,7 @@ public class AccountController {
     }
 
     @GetMapping("/accounts")
-    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER')")
     public List<AccountResponse> listAllAccounts() {
         return accountService.listAllAccounts();
     }
@@ -103,7 +104,7 @@ public class AccountController {
     }
 
     @GetMapping("/accounts/{accountId}/control-history")
-    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER')")
     public AccountControlHistoryResponse controlHistory(@PathVariable Long accountId) {
         return accountService.getControlHistory(accountId);
     }

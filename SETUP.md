@@ -83,6 +83,66 @@ Runs on port **5173** and proxies `/api` and related paths to the backend on
 URL via `VITE_DEV_BACKEND_TARGET`).
 
 
+## Using the shared personas
+
+The repository ships a small cast of seeded customers so you do not have to hand-build
+one to try something out. They are **off by default** - nothing is seeded unless you ask.
+
+Turn seeding on when you start the backend:
+
+```bash
+cd backend
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--app.seed.personas.enabled=true
+```
+
+Or set `SEED_PERSONAS_ENABLED=true` in your environment, which is how CI, QA and demo
+environments should do it.
+
+| Persona | Login | What it is for |
+|---|---|---|
+| `salaried` | `seed.salaried@voltio.test` | The ordinary customer. Regular income and spending, 18 months of history - risk scoring gives a real score and the chatbot personalises. |
+| `goalSaver` | `seed.goalsaver@voltio.test` | Saving toward a near-term goal at 45% progress. Two accounts. |
+| `operations` | `seed.operations@voltio.test` | Administrator. Owns a FROZEN account so restriction workflows can be demonstrated. |
+| `sparse` | `seed.sparse@voltio.test` | Deliberately data-poor. Triggers the chatbot fallback and the risk `INSUFFICIENT_DATA` status. |
+| `riskAnalyst` | `seed.riskanalyst@voltio.test` | Risk Analyst role. Also proves a non-administrator staff role does **not** inherit freeze/unfreeze powers. |
+| `complianceObserver` | `seed.compliance@voltio.test` | Compliance/Audit Observer role, read-only oversight. |
+
+Every role the platform recognizes has a persona holding it, and a catalogue invariant (C11)
+makes that a startup failure if a role is ever added without one.
+
+All four share the password on `PersonaSeeder.SEED_PASSWORD`. These credentials work only
+in non-production environments - seeding refuses to run against a production-shaped
+configuration, and is disabled by default everywhere else.
+
+**Re-running the app does not reset them.** Seeding fills in what is missing and never
+overwrites, so a scenario that moved money leaves the persona changed. To restore one:
+
+```java
+resetService.reset("goalSaver");   // just this persona
+resetService.resetAll();           // all of them
+```
+
+Reset is scoped per persona on purpose: in a shared QA environment, restoring the persona
+you are working on must not destroy a colleague's half-finished run.
+
+**Running the seed tests requires a live PostgreSQL** on port 5433, because they run against
+the real engine and Flyway-managed schema rather than an in-memory substitute:
+
+```bash
+docker compose up -d pgvector create-banking-core
+cd backend && ./mvnw test -Dtest='com.group1.banking.seed.*Test'
+```
+
+Note the `*Test` suffix in that pattern - `com.group1.banking.seed.*` matches nothing and
+surefire reports success having run zero tests.
+
+Their full definitions - including the expected outcome for each of the four features -
+live in [`backend/src/main/resources/personas/voltio-personas.yaml`](backend/src/main/resources/personas/voltio-personas.yaml).
+That file is the single source of truth: the tests read their expected values from it, so
+editing a persona without updating its expectations fails `PersonaCatalogueValidationTest`
+rather than drifting silently. When writing tests, read values from the catalogue through
+the `Personas` accessor instead of restating them.
+
 ## Running tests
 
 Backend:

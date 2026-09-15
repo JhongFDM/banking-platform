@@ -19,7 +19,7 @@ export function AccountListPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { customerId } = useParams();
-  const { isAdmin, rememberCustomerId } = useAuth();
+  const { isAdmin, isComplianceObserver, rememberCustomerId } = useAuth();
   const [formState, setFormState] = useState(emptyCreateAccountForm);
   const [error, setError] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
@@ -341,7 +341,7 @@ export function AccountListPage() {
         </section>
 
         {/* Savings Goals Section */}
-        {!isAdmin ? <section className="panel stack">
+        {!isAdmin && !isComplianceObserver ? <section className="panel stack">
           <div className="page-header-row">
             <div>
               <h2>Savings Goals</h2>

@@ -75,6 +75,7 @@ public class SavingsGoalController {
      * - 409: Goal already exists for this account
      */
     @PostMapping("/accounts/{account_id}")
+    @PreAuthorize("!hasRole('COMPLIANCE_AUDIT_OBSERVER')")
     public ResponseEntity<SavingsGoalResponse> createGoal(
             @PathVariable("account_id") Long accountId,
             @Valid @RequestBody SavingsGoalRequest request,
@@ -169,6 +170,7 @@ public class SavingsGoalController {
      * - 404: Goal not found
      */
     @PutMapping("/accounts/{account_id}/goals/{goal_id}")
+    @PreAuthorize("!hasRole('COMPLIANCE_AUDIT_OBSERVER')")
     public ResponseEntity<SavingsGoalResponse> updateGoal(
             @PathVariable("account_id") Long accountId,
             @PathVariable("goal_id") Long goalId,
@@ -197,6 +199,7 @@ public class SavingsGoalController {
      * - 404: Goal not found
      */
     @DeleteMapping("/accounts/{account_id}/goals/{goal_id}")
+    @PreAuthorize("!hasRole('COMPLIANCE_AUDIT_OBSERVER')")
     public ResponseEntity<Void> deleteGoal(
             @PathVariable("account_id") Long accountId,
             @PathVariable("goal_id") Long goalId,

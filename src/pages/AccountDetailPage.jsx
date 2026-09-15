@@ -43,7 +43,9 @@ export function AccountDetailPage() {
   const location = useLocation();
   const { accountId } = useParams();
   const queryClient = useQueryClient();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isComplianceObserver } = useAuth();
+  const canReviewAudit = isAdmin || isComplianceObserver;
+  const isReadOnlyObserver = isComplianceObserver && !isAdmin;
   const [error, setError] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
   const [interestRateInput, setInterestRateInput] = useState('');
@@ -74,7 +76,7 @@ export function AccountDetailPage() {
   const controlHistoryQuery = useQuery({
     queryKey: ['account-control-history', accountId],
     queryFn: () => getAccountControlHistory(accountId),
-    enabled: isAdmin && Boolean(accountId)
+    enabled: canReviewAudit && Boolean(accountId)
   });
 
   async function handleDelete() {
@@ -224,12 +226,17 @@ export function AccountDetailPage() {
               <p className="muted text-block-tight-top">View your account balance and access account features.</p>
             </div>
             <div className="actions">
-              <Link className="button-link subtle" to={`/customer/${account.customerId}/accounts`}>Back to Account List</Link>
-              {isRrsp ? (
+              <Link
+                className="button-link subtle"
+                to={isReadOnlyObserver ? "/audit-observer" : `/customer/${account.customerId}/accounts`}
+              >
+                {isReadOnlyObserver ? "Back to Audit Review" : "Back to Account List"}
+              </Link>
+              {isAdmin && isRrsp ? (
                 <button type="button" className="secondary danger" onClick={handleCloseRrsp} disabled={closeRrspMutation.isPending}>Close RRSP</button>
-              ) : (
+              ) : isAdmin ? (
                 <button type="button" className="secondary danger" onClick={handleDelete} disabled={deleteAccountMutation.isPending || !canDeleteAccount}>Delete Account</button>
-              )}
+              ) : null}
             </div>
           </div>
           <div className="account-overview-grid">
@@ -248,11 +255,11 @@ export function AccountDetailPage() {
           </div>
           <div className="section-divider" />
           <div className="actions">
-            <Link className="button-link subtle" to={`/accounts/transfer?fromAccountId=${account.accountId}`}>Transfer Funds</Link>
+            {!isReadOnlyObserver ? <Link className="button-link subtle" to={`/accounts/transfer?fromAccountId=${account.accountId}`}>Transfer Funds</Link> : null}
             <Link className="button-link subtle" to={`/accounts/${account.accountId}/transactions`}>Transaction History</Link>
-            <Link className="button-link subtle" to={`/accounts/${account.accountId}/standing-orders`}>Standing Orders</Link>
-            <Link className="button-link subtle" to={`/accounts/${account.accountId}/statements`}>Monthly Statement</Link>
-            <Link className="button-link subtle" to={`/accounts/${account.accountId}/insights`}>Spending Insights</Link>
+            {!isReadOnlyObserver ? <Link className="button-link subtle" to={`/accounts/${account.accountId}/standing-orders`}>Standing Orders</Link> : null}
+            {!isReadOnlyObserver ? <Link className="button-link subtle" to={`/accounts/${account.accountId}/statements`}>Monthly Statement</Link> : null}
+            {!isReadOnlyObserver ? <Link className="button-link subtle" to={`/accounts/${account.accountId}/insights`}>Spending Insights</Link> : null}
           </div>
           {!isRrsp && !canDeleteAccount ? <p className="muted compact-text">Balance must be exactly zero to delete this account.</p> : null}
           {location.pathname.endsWith('/edit') ? <div className="banner success">You are viewing the edit route for this account.</div> : null}
@@ -266,9 +273,11 @@ export function AccountDetailPage() {
               <h3 className="zero-margin">GIC Portfolio</h3>
               <p className="muted text-block-tight-top">Guaranteed Investment Certificates linked to this RRSP.</p>
             </div>
-            <button type="button" onClick={() => { setGicError(null); setGicMessage(null); setIsGicModalOpen(true); }}>
-              Open GIC from this Account
-            </button>
+            {isAdmin ? (
+              <button type="button" onClick={() => { setGicError(null); setGicMessage(null); setIsGicModalOpen(true); }}>
+                Open GIC from this Account
+              </button>
+            ) : null}
           </div>
 
           {gicMessage ? <div className="banner success">{gicMessage}</div> : null}
@@ -298,14 +307,16 @@ export function AccountDetailPage() {
                       <td>{GIC_TERM_LABELS[gic.term] || gic.term}</td>
                       <td><span className="badge success-badge">{gic.status}</span></td>
                       <td>
-                        <button
-                          type="button"
-                          className="secondary btn-redeem"
-                          onClick={() => handleRedeemGic(gic.gicId ?? gic.id)}
-                          disabled={redeemGicMutation.isPending}
-                        >
-                          Redeem
-                        </button>
+                        {isAdmin ? (
+                          <button
+                            type="button"
+                            className="secondary btn-redeem"
+                            onClick={() => handleRedeemGic(gic.gicId ?? gic.id)}
+                            disabled={redeemGicMutation.isPending}
+                          >
+                            Redeem
+                          </button>
+                        ) : <span className="muted compact-text">Read-only</span>}
                       </td>
                     </tr>
                   ))}
@@ -315,7 +326,9 @@ export function AccountDetailPage() {
           ) : !gicQuery.isLoading ? (
             <div className="panel gic-empty-panel">
               <p className="muted zero-margin">No active GIC investments for this RRSP.</p>
-              <button type="button" onClick={() => { setGicError(null); setGicMessage(null); setIsGicModalOpen(true); }}>Open your first GIC</button>
+              {isAdmin ? (
+                <button type="button" onClick={() => { setGicError(null); setGicMessage(null); setIsGicModalOpen(true); }}>Open your first GIC</button>
+              ) : null}
             </div>
           ) : null}
 
@@ -419,6 +432,33 @@ export function AccountDetailPage() {
               </ul>
             ) : null}
           </div>
+        </section>
+      ) : null}
+      {isReadOnlyObserver && account ? (
+        <section className="panel stack">
+          <div className="section-header">
+            <div>
+              <h3 className="zero-margin">Freeze/Unfreeze Audit History</h3>
+              <p className="muted text-block-tight-top">
+                Read-only account control activity. No account changes can be made from this view.
+              </p>
+            </div>
+          </div>
+          {controlHistoryQuery.isLoading ? (
+            <p className="muted compact-text">Loading control history...</p>
+          ) : null}
+          {!controlHistoryQuery.isLoading && (controlHistoryQuery.data?.events || []).length === 0 ? (
+            <p className="muted compact-text">No freeze/unfreeze events recorded yet.</p>
+          ) : null}
+          {(controlHistoryQuery.data?.events || []).length > 0 ? (
+            <ul className="stack">
+              {controlHistoryQuery.data.events.map((event) => (
+                <li key={event.eventId} className="muted compact-text">
+                  {event.actionType} {event.previousStatus} to {event.newStatus} at {event.timestamp}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </section>
       ) : null}
 
