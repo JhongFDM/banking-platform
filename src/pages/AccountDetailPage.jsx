@@ -234,7 +234,7 @@ export function AccountDetailPage() {
               </Link>
               {isAdmin && isRrsp ? (
                 <button type="button" className="secondary danger" onClick={handleCloseRrsp} disabled={closeRrspMutation.isPending}>Close RRSP</button>
-              ) : isAdmin ? (
+              ) : (isAdmin || !isReadOnlyObserver) && !isRrsp ? (
                 <button type="button" className="secondary danger" onClick={handleDelete} disabled={deleteAccountMutation.isPending || !canDeleteAccount}>Delete Account</button>
               ) : null}
             </div>
