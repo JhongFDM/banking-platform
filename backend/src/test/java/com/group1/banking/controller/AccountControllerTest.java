@@ -21,16 +21,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.lang.reflect.Method;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -112,6 +116,25 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isUnprocessableContent());
+    }
+
+    @Test
+    void accountReadMethods_shouldAllowRiskAnalyst() throws NoSuchMethodException {
+        Method getAccount = AccountController.class.getDeclaredMethod("getAccount", Long.class);
+        Method listCustomerAccounts = AccountController.class.getDeclaredMethod("listCustomerAccounts", Long.class);
+        Method freezeAccount = AccountController.class.getDeclaredMethod("freezeAccount", Long.class,
+                com.group1.banking.dto.accountcontrol.FreezeAccountRequest.class);
+        Method unfreezeAccount = AccountController.class.getDeclaredMethod("unfreezeAccount", Long.class,
+                com.group1.banking.dto.accountcontrol.UnfreezeAccountRequest.class);
+
+        assertThat(getAccount.getAnnotation(PreAuthorize.class).value())
+                .contains("RISK_ANALYST");
+        assertThat(listCustomerAccounts.getAnnotation(PreAuthorize.class).value())
+                .contains("RISK_ANALYST");
+        assertThat(freezeAccount.getAnnotation(PreAuthorize.class).value())
+                .doesNotContain("RISK_ANALYST");
+        assertThat(unfreezeAccount.getAnnotation(PreAuthorize.class).value())
+                .doesNotContain("RISK_ANALYST");
     }
 
     // ===== GET ACCOUNT =====
