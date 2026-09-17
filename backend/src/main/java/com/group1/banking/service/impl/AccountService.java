@@ -313,6 +313,9 @@ public class AccountService {
     @Transactional
     public void deleteAccount(Long accountId) {
         User user = getAuthenticatedUser();
+        if (isObserver(user)) {
+            throw new ForbiddenException("FORBIDDEN", "Compliance observers cannot delete accounts");
+        }
         Account account = loadActiveAccount(accountId);
         checkAuthorization(user, account.getCustomer().getCustomerId());
         if (account.getBalance().compareTo(BigDecimal.ZERO.setScale(2, RoundingMode.UNNECESSARY)) != 0) {
@@ -552,7 +555,11 @@ public class AccountService {
     }
 
     private boolean canReviewAudit(User user) {
-        return isAdmin(user) || user.getRoles().stream()
+        return isAdmin(user) || isObserver(user);
+    }
+
+    private boolean isObserver(User user) {
+        return user.getRoles().stream()
                 .anyMatch(r -> r.name().equalsIgnoreCase("COMPLIANCE_AUDIT_OBSERVER")
                         || r.name().equalsIgnoreCase("ROLE_COMPLIANCE_AUDIT_OBSERVER"));
     }
