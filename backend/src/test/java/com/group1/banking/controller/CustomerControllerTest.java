@@ -13,14 +13,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.lang.reflect.Method;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -117,6 +121,24 @@ class CustomerControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableContent());
+    }
+
+    @Test
+    void customerReadMethods_shouldAllowRiskAnalyst() throws NoSuchMethodException {
+        Method getCustomer = CustomerController.class.getDeclaredMethod("getCustomer", Long.class);
+        Method getAllCustomers = CustomerController.class.getDeclaredMethod("getAllCustomers");
+        Method updateCustomer = CustomerController.class.getDeclaredMethod("updateCustomer", Long.class,
+                com.group1.banking.dto.customer.PatchCustomerRequest.class);
+        Method deleteCustomer = CustomerController.class.getDeclaredMethod("deleteCustomer", Long.class);
+
+        assertThat(getCustomer.getAnnotation(PreAuthorize.class).value())
+                .contains("RISK_ANALYST");
+        assertThat(getAllCustomers.getAnnotation(PreAuthorize.class).value())
+                .contains("RISK_ANALYST");
+        assertThat(updateCustomer.getAnnotation(PreAuthorize.class).value())
+                .doesNotContain("RISK_ANALYST");
+        assertThat(deleteCustomer.getAnnotation(PreAuthorize.class).value())
+                .doesNotContain("RISK_ANALYST");
     }
 
     // ===== GET CUSTOMER =====

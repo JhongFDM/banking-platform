@@ -54,17 +54,19 @@ public class AccountController {
     }
 
     @GetMapping("/accounts")
-    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER') or hasRole('RISK_ANALYST')")
     public List<AccountResponse> listAllAccounts() {
         return accountService.listAllAccounts();
     }
 
     @GetMapping("/accounts/{accountId}")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER') or hasRole('RISK_ANALYST')")
     public AccountResponse getAccount(@PathVariable Long accountId) {
         return accountService.getAccount(accountId);
     }
 
     @GetMapping("/customers/{customerId}/accounts")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('COMPLIANCE_AUDIT_OBSERVER') or hasRole('RISK_ANALYST')")
     public List<AccountResponse> listCustomerAccounts(@PathVariable Long customerId) {
         return accountService.listCustomerAccounts(customerId);
     }
