@@ -1,26 +1,35 @@
 package com.group1.banking.security;
 
+import com.group1.banking.entity.Account;
+import com.group1.banking.entity.Customer;
 import com.group1.banking.entity.User;
 import com.group1.banking.enums.RoleName;
+import com.group1.banking.repository.AccountRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OwnershipServiceTest {
 
     @InjectMocks
     private OwnershipService ownershipService;
+
+    @Mock
+    private AccountRepository accountRepository;
 
     private CustomUserPrincipal customerPrincipal;
     private CustomUserPrincipal adminPrincipal;
@@ -87,5 +96,41 @@ class OwnershipServiceTest {
         user.setCustomerId(null);
         CustomUserPrincipal principalWithNoCustomerId = new CustomUserPrincipal(user);
         assertThat(ownershipService.canAccessCustomer(authOf(principalWithNoCustomerId), 42L)).isFalse();
+    }
+
+    private Account accountOwnedBy(Long customerId) {
+        Customer customer = new Customer();
+        customer.setCustomerId(customerId);
+        Account account = new Account();
+        account.setCustomer(customer);
+        return account;
+    }
+
+    @Test
+    void canAccessAccount_shouldReturnTrue_whenCustomerOwnsAccount() {
+        when(accountRepository.findById(1001L)).thenReturn(Optional.of(accountOwnedBy(42L)));
+        assertThat(ownershipService.canAccessAccount(authOf(customerPrincipal), 1001L)).isTrue();
+    }
+
+    @Test
+    void canAccessAccount_shouldReturnFalse_whenCustomerDoesNotOwnAccount() {
+        when(accountRepository.findById(1001L)).thenReturn(Optional.of(accountOwnedBy(99L)));
+        assertThat(ownershipService.canAccessAccount(authOf(customerPrincipal), 1001L)).isFalse();
+    }
+
+    @Test
+    void canAccessAccount_shouldReturnTrue_whenAdminAccessesAnyAccount() {
+        assertThat(ownershipService.canAccessAccount(authOf(adminPrincipal), 1001L)).isTrue();
+    }
+
+    @Test
+    void canAccessAccount_shouldReturnFalse_whenAccountNotFound() {
+        when(accountRepository.findById(1001L)).thenReturn(Optional.empty());
+        assertThat(ownershipService.canAccessAccount(authOf(customerPrincipal), 1001L)).isFalse();
+    }
+
+    @Test
+    void canAccessAccount_shouldReturnFalse_whenAuthenticationIsNull() {
+        assertThat(ownershipService.canAccessAccount(null, 1001L)).isFalse();
     }
 }
