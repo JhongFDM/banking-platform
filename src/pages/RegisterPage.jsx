@@ -65,8 +65,8 @@ export function RegisterPage() {
       return;
     }
 
-    if (!formState.name.trim()) {
-      setError({ message: 'Name is required.' });
+    if (formState.name.trim().length < 2) {
+      setError({ message: 'Name is required and must be at least 2 characters long' });
       return;
     }
 
