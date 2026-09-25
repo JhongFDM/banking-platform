@@ -2460,6 +2460,184 @@ summary:focus-visible {
   color: var(--text-muted);
 }
 
+/* ── Risk analyst dashboard ───────────────────────────────────── */
+
+.risk-dashboard {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.risk-dashboard-header,
+.risk-dashboard-table-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.risk-dashboard-header {
+  padding: 0.5rem 0 0.25rem;
+}
+
+.risk-dashboard-header h1 {
+  margin: 0.15rem 0 0.45rem;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+}
+
+.risk-dashboard-header p {
+  margin: 0;
+}
+
+.risk-dashboard-eyebrow {
+  color: var(--neon-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.risk-dashboard-refresh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.risk-dashboard-status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgba(57, 255, 136, 0.12);
+}
+
+.risk-dashboard-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.risk-dashboard-summary-card {
+  display: grid;
+  gap: 0.55rem;
+  min-height: 150px;
+  padding: 1.35rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.risk-dashboard-summary-alert {
+  border-color: rgba(255, 77, 109, 0.55);
+}
+
+.risk-dashboard-card-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.risk-dashboard-summary-card strong {
+  font-size: 2.35rem;
+  line-height: 1;
+}
+
+.risk-dashboard-card-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.risk-dashboard-table-shell {
+  overflow: hidden;
+}
+
+.risk-dashboard-table-heading {
+  padding: 1.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.risk-dashboard-table-heading h2 {
+  margin: 0 0 0.35rem;
+}
+
+.risk-dashboard-table-heading p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.risk-dashboard-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.risk-dashboard-table-shell table {
+  width: 100%;
+  min-width: 840px;
+}
+
+.risk-dashboard-score-cell,
+.risk-dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.risk-dashboard-score-cell strong {
+  min-width: 3.2rem;
+}
+
+.risk-dashboard-actions .button-link,
+.risk-dashboard-actions button {
+  min-height: 36px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+.risk-dashboard-trend {
+  font-weight: 700;
+}
+
+.risk-dashboard-trend-up {
+  color: var(--error);
+}
+
+.risk-dashboard-trend-down {
+  color: var(--success);
+}
+
+.risk-dashboard-trend-flat,
+.risk-dashboard-insufficient {
+  color: var(--muted);
+}
+
+.risk-dashboard-empty {
+  padding: 2rem 1.35rem;
+  color: var(--muted);
+}
+
+.risk-dashboard-flagged-label {
+  color: var(--success);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .risk-dashboard-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-dashboard-header,
+  .risk-dashboard-table-heading {
+    flex-direction: column;
+  }
+}
+
 /* ── GoalProgressBar ──────────────────────────────────────────── */
 
 .goal-progress-container {

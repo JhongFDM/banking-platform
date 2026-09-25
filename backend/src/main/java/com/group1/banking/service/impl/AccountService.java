@@ -130,9 +130,7 @@ public class AccountService {
     @Transactional
     public AccountControlActionResponse freezeAccount(Long accountId, FreezeAccountRequest request) {
         User user = getAuthenticatedUser();
-        if (!canReviewAudit(user)) {
-            throw new ForbiddenException("FORBIDDEN", "Only admin users can view account control history");
-        }
+        assertAdmin(user);
         if (request == null || request.reason() == null || request.reason().isBlank()) {
             throw new BadRequestException("MISSING_FREEZE_REASON", "Freeze reason is required",
                     Map.of("field", "reason"));

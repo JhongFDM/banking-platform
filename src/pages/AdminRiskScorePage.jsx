@@ -13,7 +13,7 @@ import { calculateRiskScore } from "../api/riskAssessment";
 export function AdminRiskScorePage() {
   const navigate = useNavigate();
   const { customerId } = useParams();
-  const { isAdmin, isComplianceObserver, rememberCustomerId } = useAuth();
+  const { isAdmin, isComplianceObserver, isRiskAnalyst, rememberCustomerId } = useAuth();
   const canReviewAudit = isAdmin || isComplianceObserver;
   const [error, setError] = useState(null);
   const [infoMessage, setInfoMessage] = useState(null);
@@ -102,10 +102,10 @@ export function AdminRiskScorePage() {
               </h2>
               <p className="muted text-top-muted">
                 Review the customer's risk score history and explanation.
-                {isAdmin ? " Recalculate on demand when permitted." : ""}
+                {isAdmin || isRiskAnalyst ? " Recalculate on demand when permitted." : ""}
               </p>
             </div>
-            {isAdmin && customerId && !customerError ? (
+            {(isAdmin || isRiskAnalyst) && customerId && !customerError ? (
               <button
                 type="button"
                 onClick={handleRiskCalculation}
