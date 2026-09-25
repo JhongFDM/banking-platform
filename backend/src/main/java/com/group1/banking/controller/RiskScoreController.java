@@ -24,8 +24,7 @@ public class RiskScoreController {
         this.riskScoreService = riskScoreService;
     }
 
-    // admin-only
-    @PreAuthorize("hasRole('BANK_ADMINISTRATOR')")
+    @PreAuthorize("hasRole('BANK_ADMINISTRATOR') or hasRole('RISK_ANALYST')")
     @PostMapping("customers/{id}")
     public ResponseEntity<RiskScoreResponse> calculateRiskScore(@PathVariable Long id,
             @AuthenticationPrincipal CustomUserPrincipal principal) {

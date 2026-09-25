@@ -25,6 +25,8 @@ class RiskScoreControllerTest {
         assertThat(getHistory.getAnnotation(PreAuthorize.class).value())
                 .contains("RISK_ANALYST");
         assertThat(calculateRiskScore.getAnnotation(PreAuthorize.class).value())
-                .doesNotContain("RISK_ANALYST");
+                .contains("BANK_ADMINISTRATOR")
+                .contains("RISK_ANALYST")
+                .doesNotContain("COMPLIANCE_AUDIT_OBSERVER");
     }
 }

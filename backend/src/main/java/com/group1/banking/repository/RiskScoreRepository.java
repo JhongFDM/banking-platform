@@ -11,4 +11,6 @@ public interface RiskScoreRepository extends JpaRepository<RiskScore, Long> {
     Optional<RiskScore> findFirstByCustomerCustomerIdOrderByCalculatedAtDesc(Long customerId);
 
     Optional<List<RiskScore>> findAllByCustomerCustomerIdOrderByCalculatedAtDesc(Long customerId);
+
+    List<RiskScore> findAllByOrderByCustomerCustomerIdAscCalculatedAtDesc();
 }

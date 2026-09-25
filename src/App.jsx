@@ -11,6 +11,7 @@ import {
 import { useAuth } from "./auth/AuthContext";
 import { AdminRoute } from "./auth/AdminRoute";
 import { AuditObserverRoute } from "./auth/AuditObserverRoute";
+import { RiskAnalystRoute } from "./auth/RiskAnalystRoute";
 import { ObserverRestrictedRoute } from "./auth/ObserverRestrictedRoute";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { ChatWidget } from "./components/ChatWidget";
@@ -44,6 +45,8 @@ import voltioIcon from "./images/Voltio_icon.png";
 import voltioIconGreen from "./images/Voltio_icon_green.png";
 import { AdminRiskScorePage } from "./pages/AdminRiskScorePage";
 import ComplianceAuditObserverPage from "./pages/ComplianceAuditObserverPage";
+import { RiskAnalystDashboardPage } from "./pages/RiskAnalystDashboardPage";
+import { AdminRiskReviewQueuePage } from "./pages/AdminRiskReviewQueuePage";
 
 function getDefaultAuthenticatedRoute(authState) {
   const isAdmin =
@@ -59,6 +62,13 @@ function getDefaultAuthenticatedRoute(authState) {
     authState.roles.includes("ROLE_COMPLIANCE_AUDIT_OBSERVER")
   ) {
     return "/audit-observer";
+  }
+
+  if (
+    authState.roles.includes("RISK_ANALYST") ||
+    authState.roles.includes("ROLE_RISK_ANALYST")
+  ) {
+    return "/risk-dashboard";
   }
 
   if (authState.customerId) {
@@ -136,6 +146,7 @@ function AppLayout() {
   // Admin-specific nav logic
   const isAdminUser = isAdmin;
   const isAuditObserver = isComplianceObserver && !isAdmin;
+  const { isRiskAnalyst } = useAuth();
   const isCustomersActive = location.pathname === "/admin/customers";
   const isCustomerAccountsActiveAdmin =
     isAdminUser && location.pathname === "/admin/accounts";
@@ -304,6 +315,14 @@ function AppLayout() {
                 >
                   Customers
                 </NavLink>
+                <NavLink
+                  className={() =>
+                    `subnav-btn${pathname.startsWith("/admin/risk-reviews") ? " active" : ""}`
+                  }
+                  to="/admin/risk-reviews"
+                >
+                  Risk Reviews
+                </NavLink>
               </>
             ) : isAuditObserver ? (
               <NavLink
@@ -313,6 +332,15 @@ function AppLayout() {
                 to="/audit-observer"
               >
                 Audit Review
+              </NavLink>
+            ) : isRiskAnalyst ? (
+              <NavLink
+                className={() =>
+                  `subnav-btn${pathname === "/risk-dashboard" ? " active" : ""}`
+                }
+                to="/risk-dashboard"
+              >
+                Risk Dashboard
               </NavLink>
             ) : (
               <>
@@ -481,6 +509,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminRoute />}>
             <Route path="/admin/customers" element={<AdminCustomersPage />} />
+            <Route path="/admin/risk-reviews" element={<AdminRiskReviewQueuePage />} />
             <Route path="/admin/accounts" element={<AccountAdminListPage />} />
             <Route
               path="/admin/:customerId/risk-assessment"
@@ -491,6 +520,13 @@ export default function App() {
             <Route path="/audit-observer" element={<ComplianceAuditObserverPage />} />
             <Route
               path="/audit-observer/:customerId/risk-assessment"
+              element={<AdminRiskScorePage />}
+            />
+          </Route>
+          <Route element={<RiskAnalystRoute />}>
+            <Route path="/risk-dashboard" element={<RiskAnalystDashboardPage />} />
+            <Route
+              path="/risk-dashboard/:customerId/risk-assessment"
               element={<AdminRiskScorePage />}
             />
           </Route>
