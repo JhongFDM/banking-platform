@@ -154,7 +154,13 @@ public class SavingsChatTools {
                     .topK(knowledgeBaseTopK)
                     .similarityThreshold(knowledgeBaseSimilarityThreshold)
                     .build());
-
+//             System.out.println("Returned docs:");
+// for (Document doc : docs) {
+//     System.out.println("----");
+//        System.out.println("Emadddd");
+//     System.out.println(doc.getText());
+//     System.out.println(doc.getMetadata());
+// }
             if (docs.isEmpty()) {
                 return "No closely related articles were found in the knowledge base for: " + query;
             }
